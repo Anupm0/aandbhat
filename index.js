@@ -3,30 +3,12 @@ const express = require('express');
 const mongoose = require('mongoose');
 const passport = require('passport');
 const cors = require('cors');
-
+const chalk = require('chalk');
 require('dotenv').config();
-
-
-
-
-
-
-
-
-
-
-
-
 const HOST = process.env.HOSTNAME || 'localhost';
-
 // Initialize express app
 
 const app = express();
-
-
-
-
-
 app.use((req, res, next) => {
     const start = Date.now();
     const timestamp = new Date().toISOString();
@@ -94,6 +76,7 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // Import routes
 const authRoutes = require('./router/routelogin');
+const { default: chalk } = require('chalk');
 
 // Use routes
 app.use('/api/auth', authRoutes);
