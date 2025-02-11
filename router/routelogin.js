@@ -118,7 +118,7 @@ router.post('/signup', async (req, res) => {
 
         // Create a verification link.
         const protocol = req.protocol;
-        host = req.get('host'); // Gets current server hostname
+        const host = req.get('host'); // Gets current server hostname
         const verificationLink = `${protocol}://${host}/api/auth/verify-email/${verificationToken}`;
         // Send verification email.
         console.log('verificationLink:', verificationLink);
