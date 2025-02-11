@@ -89,8 +89,8 @@ router.post('/signup', async (req, res) => {
         await user.save();
 
         // Create verification link
-        const verificationLink = `${process.env.API_URL}/api/auth/verify-email/${verificationToken}/${encodeURIComponent(email)}`;
-
+        const protocol = req.protocol; // Gets 'http' or 'https' based on the request
+        const verificationLink = `${protocol}://${process.env.hostname}/api/auth/verify-email/${verificationToken}/${encodeURIComponent(email)}`;
         // Send verification email
         await transporter.sendMail({
             from: process.env.EMAIL_USER,
