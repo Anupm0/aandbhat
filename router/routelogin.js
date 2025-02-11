@@ -55,76 +55,98 @@ function generateToken(user) {
     );
 }
 
+
+function generateVerificationToken() {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+
+
+
 // Local Email & Password Registration
 router.post('/signup', async (req, res) => {
     try {
         const { email, password, mobile } = req.body;
 
-        // Check if user already exists
+        // Check if user exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ message: 'Email already registered' });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
+        const verificationToken = generateVerificationToken();
 
         const user = new User({
             email,
             password: hashedPassword,
-            mobile: `+91${mobile}`,
-            authProvider: 'local'
+            mobile: mobile ? `+91${mobile.replace(/\s+/g, '')}` : undefined,
+            authProvider: 'local',
+            verificationToken
         });
 
         await user.save();
 
-        // Generate and send OTP for email verification
-        const otp = generateOTP();
-        user.otp = otp;
-        user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // OTP valid for 10 minutes
-        await user.save();
+        // Create verification link
+        const verificationLink = `${process.env.API_URL}/api/auth/verify-email/${verificationToken}/${encodeURIComponent(email)}`;
 
         // Send verification email
         await transporter.sendMail({
             from: process.env.EMAIL_USER,
             to: email,
-            subject: 'Email Verification',
-            text: `Your verification code is: ${otp}`
-        }).then(info => {
-            console.log('Email sent:', info.response);
-        }).catch(error => {
-            console.error('Email error:', error);
-            return res.status(500).json({ message: 'Error sending email' });
+            subject: 'Verify Your Email',
+            html: `
+                <h1>Email Verification</h1>
+                <p>Please click the link below to verify your email address:</p>
+                <a href="${verificationLink}">Verify Email</a>
+                <p>This link will expire in 24 hours.</p>
+                <p>If you didn't create an account, please ignore this email.</p>
+            `
         });
 
-        res.status(201).json({ message: 'User registered. Please verify your email.' });
+        res.status(201).json({
+            message: 'Registration successful. Please check your email to verify your account.'
+        });
     } catch (error) {
-        res.status(500).json({ message: 'Error during registration', error: error.message });
+        res.status(500).json({
+            message: 'Error during registration',
+            error: error.message
+        });
     }
 });
-
 // Email verification with OTP
-router.post('/verify-email', async (req, res) => {
+router.get('/verify-email/:token/:email', async (req, res) => {
     try {
-        const { email, otp } = req.body;
+        const { token, email } = req.params;
+
         const user = await User.findOne({
-            email,
-            otp,
-            otpExpiry: { $gt: new Date() }
+            email: decodeURIComponent(email),
+            verificationToken: token,
+            isEmailVerified: false
         });
 
         if (!user) {
-            return res.status(400).json({ message: 'Invalid or expired OTP' });
+            return res.status(400).json({
+                message: 'Invalid verification link or email already verified'
+            });
         }
 
+        // Update user verification status
         user.isEmailVerified = true;
-        user.otp = undefined;
-        user.otpExpiry = undefined;
+        user.verificationToken = undefined;
         await user.save();
 
-        const token = generateToken(user);
-        res.json({ token });
+        // Generate JWT token
+        const authToken = generateToken(user);
+
+        // Redirect to frontend with success message
+        res.redirect(`${process.env.FRONTEND_URL}/email-verified?token=${authToken}`);
     } catch (error) {
-        res.status(500).json({ message: 'Error during verification', error: error.message });
+        console.error('Verification error:', error);
+        res.status(500).json({
+            message: 'Error during email verification',
+            error: error.message
+        });
     }
 });
 
@@ -176,30 +198,35 @@ router.post('/resend-otp', async (req, res) => {
 
         //check if send otp to mobile or email
         if (mobile && !email) {
-            //send otp to mobile number using twilio
             const otp = generateOTP();
             user.otp = otp;
-            user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // OTP valid for 10 minutes
+            user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
             await user.save();
-
-            //send otp to mobile number
-            console.log('Mobile number:', mobile);
 
             const accountSid = process.env.TWILIO_ACCOUNT_SID;
             const authToken = process.env.TWILIO_AUTH_TOKEN;
             const client = require('twilio')(accountSid, authToken);
-            client.messages
-                .create({
+
+            try {
+                // Ensure proper formatting for Indian numbers
+                const formattedMobile = mobile.startsWith('+') ? mobile : `+91${mobile}`;
+
+                const message = await client.messages.create({
                     body: `Your verification code is: ${otp}`,
-                    from: process.env.TWILIO_PHONE_NUMBER,
-                    to: `+91${mobile}`
-                })
-                .then(message => console.log(message.sid))
-                .catch(error => console.error('Twilio error:', error));
-            res.json({ message: 'OTP sent successfully' });
+                    from: process.env.TWILIO_PHONE_NUMBER.replace(/\s+/g, ''), // Remove any whitespace
+                    to: formattedMobile
+                });
 
-
-
+                console.log('SMS sent successfully:', message.sid);
+                res.json({ message: 'OTP sent successfully' });
+            } catch (twilioError) {
+                console.error('Twilio error:', twilioError);
+                return res.status(500).json({
+                    message: 'Error sending SMS',
+                    error: twilioError.message,
+                    details: `From: ${process.env.TWILIO_PHONE_NUMBER}, To: ${mobile}`
+                });
+            }
         }
 
         if (!mobile) {
