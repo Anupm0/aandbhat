@@ -15,7 +15,7 @@ const router = express.Router();
 
 // ======== Schema Definition ========
 const userSchema = new mongoose.Schema({
-    email: { type: String, required: true, unique: true },
+    email: { type: String, required: false, unique: true },
     password: { type: String },
     mobile: { type: String, unique: true, sparse: true },
     isEmailVerified: { type: Boolean, default: false },
@@ -24,6 +24,12 @@ const userSchema = new mongoose.Schema({
     authProvider: { type: String, enum: ['local', 'google', 'apple'], default: 'local' },
     providerId: { type: String },
     otp: { type: String },
+    resendattempt: { type: Number, default: 0 },
+    role: { type: String, default: 'user' },
+    vehicle: { type: String },
+    resendattempt: { type: Number, default: 0 },
+    address: { type: String },
+    wallet: { id: { type: String }, balance: { type: Number, default: 0 } },
     otpExpiry: { type: Date }
 });
 const User = mongoose.model('User', userSchema);
@@ -88,7 +94,7 @@ function generateVerificationToken() {
 router.post('/signup', async (req, res) => {
     try {
         const { email, password, mobile } = req.body;
-        if (!email || !password) {
+        if (!email || !password || !mobile) {
             return res.status(400).json({ message: 'Email and password are required.' });
         }
 
@@ -137,7 +143,7 @@ router.post('/signup', async (req, res) => {
 });
 
 /**
- * GET /verify-email/:token/:email
+ * GET /verify-email/:token/
  * Verifies a user's email address.
  */
 router.get('/verify-email/:token', async (req, res) => {
@@ -166,6 +172,9 @@ router.get('/verify-email/:token', async (req, res) => {
  */
 router.post('/verify-mobile', async (req, res) => {
     try {
+
+
+
         const { mobile, otp } = req.body;
         if (!mobile || !otp) {
             return res.status(400).json({ message: 'Mobile number and OTP are required.' });
@@ -195,61 +204,41 @@ router.post('/verify-mobile', async (req, res) => {
  * POST /resend-otp
  * Resends OTP via SMS (if mobile provided) or email.
  */
-router.post('/resend-otp', async (req, res) => {
+router.post('/send-otp-mobile', async (req, res) => {
     try {
-        const { email, mobile } = req.body;
+        const { mobile } = req.body;
         if (!email && !mobile) {
             return res.status(400).json({ message: 'Email or mobile number is required.' });
         }
-
-        // Search by email or formatted mobile.
-        const query = email ? { email } : { mobile: formatMobile(mobile) };
-        const user = await User.findOne(query);
+        const user = await User.findOne({ email });
         if (!user) {
             return res.status(400).json({ message: 'User not found.' });
         }
-
-        // Generate and assign new OTP.
-        const otp = generateOTP();
-        user.otp = otp;
-        user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // OTP valid for 10 minutes.
-        await user.save();
-
-        // If mobile provided, send via SMS; otherwise send via email.
-        if (mobile && !email) {
-            const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-            const formattedMobile = formatMobile(mobile);
-            const message = await client.messages.create({
-                body: `Your verification code is: ${otp}`,
-                from: process.env.TWILIO_PHONE_NUMBER,
-                to: formattedMobile
-            });
-            console.log('SMS sent successfully:', message.sid);
-            return res.json({ message: 'OTP sent via SMS successfully.' });
-        } else {
-            await transporter.sendMail({
-                from: process.env.EMAIL_USER,
-                to: email,
-                subject: 'Email Verification',
-                text: `Your verification code is: ${otp}`
-            });
-            return res.json({ message: 'OTP sent via email successfully.' });
+        if (user.resendattempt >= 3) {
+            return res.status(400).json({ message: 'Maximum resend attempts reached. Try again later.' });
         }
-    } catch (error) {
+        if (user.mobile && !mobile) {
+            return res.status(400).json({ message: 'Mobile number is required.' });
+        }
+
+        const otp = generateOTP();
+    }
+    catch (error) {
         console.error('Resend OTP error:', error);
         res.status(500).json({ message: 'Internal server error', error: error.message });
     }
+
 });
 
 /**
  * POST /login
  * Authenticates a user using email and password, then sends an OTP.
  */
-router.post('/login', async (req, res) => {
+router.post('/login-second', async (req, res) => {
     try {
         const { email, password } = req.body;
         if (!email || !password) {
-            return res.status(400).json({ message: 'Email and password are required.' });
+            return res.status(400).json({ message: 'Email, mobile and password are required.' });
         }
         const user = await User.findOne({ email });
         if (!user || user.authProvider !== 'local') {
@@ -265,19 +254,20 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ message: 'Please verify your email first.' });
         }
 
-        // Generate and assign OTP for additional verification.
-        const otp = generateOTP();
-        user.otp = otp;
-        user.otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // OTP valid for 15 minutes.
-        await user.save();
-
-        // Send OTP via email.
+        const verificationLink = `${req.protocol}://${req.get('host')}/api/auth/verify-email/${user.verificationToken}`;
         await transporter.sendMail({
             from: process.env.EMAIL_USER,
             to: email,
-            subject: 'Login Verification Code',
-            text: `Your verification code is: ${otp}`
+            subject: 'Login Alert',
+            html: `
+        <h1>Login Alert</h1>
+        <p>Your account was just logged into from a new device.</p>
+        <p>If this was you, you can ignore this email.</p>
+        <p>If this wasn't you, please click the link below to secure your account:</p>
+        <a href="${verificationLink}">Secure Account</a>
+        `
         });
+
         const token = generateToken(user);
         res.json({ token });
     } catch (error) {
@@ -286,8 +276,69 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// ======== OAuth with Google ========
 
+
+
+router.post('/login', async (req, res) => {
+    try {
+        const { mobile } = req.body;
+        if (!mobile) {
+            return res.status(400).json({ message: 'Mobile number is required.' });
+        }
+        const user = await User.findOne({ mobile: formatMobile(mobile) });
+        if (!user) {
+            return res.status(400).json({ message: 'User not found.' });
+        }
+        if (!user.isMobileVerified) {
+            return res.status(400).json({ message: 'Mobile number not verified.' });
+        }
+        const otp = generateOTP();
+        user.otp = otp;
+        user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+        await user.save();
+
+        // Send OTP via SMS using Twilio
+        const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+        await client.messages.create({
+            body: `Your OTP is: ${otp}`,
+            from: process.env.TWILIO_PHONE_NUMBER,
+            to: formatMobile(mobile)
+        });
+
+        res.json({ message: 'OTP sent successfully.' });
+
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+});
+
+
+router.post('/verify-login-otp', async (req, res) => {
+    try {
+        const { mobile, otp } = req.body;
+        const user = await User.findOne({
+            mobile: formatMobile(mobile),
+            otp,
+            otpExpiry: { $gt: new Date() }
+        });
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid or expired OTP' });
+        }
+        user.otp = undefined;
+        user.otpExpiry = undefined;
+        await user.save();
+        const token = generateToken(user);
+        res.json({ token, message: 'Login successful' });
+
+    } catch (error) {
+        console.error('OTP verification error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+
+// ======== OAuth with Google ========
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
@@ -363,10 +414,9 @@ router.post('/forgot-password', async (req, res) => {
         if (!email) return res.status(400).json({ message: 'Email is required.' });
         const user = await User.findOne({ email });
         if (!user) return res.status(400).json({ message: 'User not found.' });
-
         const otp = generateOTP();
         user.otp = otp;
-        user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // OTP valid for 10 minutes.
+        user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
         await user.save();
 
         await transporter.sendMail({
