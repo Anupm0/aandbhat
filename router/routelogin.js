@@ -16,6 +16,7 @@ const userSchema = new mongoose.Schema({
     password: { type: String },
     mobile: { type: String, unique: true },
     isEmailVerified: { type: Boolean, default: false },
+    verificationToken: { type: String },
     authProvider: { type: String, enum: ['local', 'google', 'apple'], default: 'local' },
     providerId: String,
     otp: String,
@@ -57,7 +58,7 @@ function generateToken(user) {
 
 
 function generateVerificationToken() {
-    return crypto.randomBytes(32).toString('hex');
+    return crypto.getRandomValues(new Uint32Array(1))[0];
 }
 
 
