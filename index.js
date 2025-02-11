@@ -76,7 +76,7 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // Import routes
 const authRoutes = require('./router/routelogin');
-const { default: chalk } = require('chalk');
+
 
 // Use routes
 app.use('/api/auth', authRoutes);
