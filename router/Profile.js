@@ -23,7 +23,7 @@ const router = express.Router();
 
 
 
-router.post('/addvehical', (req, res) => {
+router.post('/addvehicle', (req, res) => {
     const { carType, carModel, carRegno, carColor, isDefault } = req.body;
     const vehicle = {
         carType,
