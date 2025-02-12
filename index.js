@@ -3,49 +3,62 @@ const express = require('express');
 const mongoose = require('mongoose');
 const passport = require('passport');
 const cors = require('cors');
-const chalk = require('chalk');
 require('dotenv').config();
 const HOST = process.env.HOSTNAME || 'localhost';
-// Initialize express app
+
+// ANSI color codes
+const colors = {
+    reset: '\x1b[0m',
+    bright: '\x1b[1m',
+    blue: '\x1b[34m',
+    green: '\x1b[32m',
+    yellow: '\x1b[33m',
+    red: '\x1b[31m',
+    cyan: '\x1b[36m'
+};
 
 const app = express();
+
+// Logging middleware
 app.use((req, res, next) => {
     const start = Date.now();
     const timestamp = new Date().toISOString();
 
     // Log request details
     console.log('\n' + '='.repeat(80));
-    console.log(`${chalk.blue('📨 REQUEST')} [${timestamp}]`);
-    console.log(`${chalk.green('METHOD')}: ${chalk.yellow(req.method)}`);
-    console.log(`${chalk.green('URL')}: ${chalk.yellow(req.url)}`);
-    console.log(`${chalk.green('IP')}: ${chalk.yellow(req.ip)}`);
+    console.log(`${colors.blue}📨 REQUEST${colors.reset} [${timestamp}]`);
+    console.log(`${colors.green}METHOD${colors.reset}: ${colors.yellow}${req.method}${colors.reset}`);
+    console.log(`${colors.green}URL${colors.reset}: ${colors.yellow}${req.url}${colors.reset}`);
+    console.log(`${colors.green}IP${colors.reset}: ${colors.yellow}${req.ip}${colors.reset}`);
 
     // Log headers
-    console.log(`${chalk.green('HEADERS')}:`, chalk.cyan(JSON.stringify(req.headers, null, 2)));
+    console.log(`${colors.green}HEADERS${colors.reset}:`,
+        `${colors.cyan}${JSON.stringify(req.headers, null, 2)}${colors.reset}`);
 
     // Log body for POST/PUT/PATCH requests
     if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
-        // Remove sensitive data like passwords
         const sanitizedBody = { ...req.body };
         if (sanitizedBody.password) sanitizedBody.password = '******';
         if (sanitizedBody.otp) sanitizedBody.otp = '******';
 
-        console.log(`${chalk.green('BODY')}:`, chalk.cyan(JSON.stringify(sanitizedBody, null, 2)));
+        console.log(`${colors.green}BODY${colors.reset}:`,
+            `${colors.cyan}${JSON.stringify(sanitizedBody, null, 2)}${colors.reset}`);
     }
 
     // Log response
     res.on('finish', () => {
         const duration = Date.now() - start;
-        const statusColor = res.statusCode < 400 ? chalk.green : chalk.red;
+        const statusColor = res.statusCode < 400 ? colors.green : colors.red;
 
-        console.log(`${chalk.blue('📡 RESPONSE')} [${timestamp}]`);
-        console.log(`${chalk.green('STATUS')}: ${statusColor(res.statusCode)}`);
-        console.log(`${chalk.green('DURATION')}: ${chalk.yellow(duration + 'ms')}`);
+        console.log(`${colors.blue}📡 RESPONSE${colors.reset} [${timestamp}]`);
+        console.log(`${colors.green}STATUS${colors.reset}: ${statusColor}${res.statusCode}${colors.reset}`);
+        console.log(`${colors.green}DURATION${colors.reset}: ${colors.yellow}${duration}ms${colors.reset}`);
         console.log('='.repeat(80));
     });
 
     next();
 });
+
 
 
 
