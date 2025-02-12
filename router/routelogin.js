@@ -53,6 +53,7 @@ router.post('/signup', async (req, res) => {
             password: hashedPassword,
             mobile: formattedMobile,
             authProvider: 'local',
+
             verificationToken
         });
 
