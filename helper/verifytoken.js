@@ -12,6 +12,8 @@ async function verifyToken(req, res, next) {
         // Get authorization header
         const authHeader = req.headers['authorization'];
 
+        console.log('authHeader:', authHeader);
+
         // Check if auth header exists and has correct format
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
             return res.status(401).json({
