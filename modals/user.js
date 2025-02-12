@@ -89,7 +89,13 @@ userSchema.pre('save', async function (next) {
         this.wallet.id = generateWalletId();
     }
 
-    //check 
+    //check  if wallet id is unique and generate new one if not
+    const walletIdExists = await this.constructor.findOne({ 'wallet.id': this.wallet.id });
+    if (walletIdExists) {
+        this.wallet.id = generateWalletId();
+    }
+
+
 
 
     if (this.vehicles && this.vehicles.length > 0) {
