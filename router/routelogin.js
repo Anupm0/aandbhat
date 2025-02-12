@@ -1,89 +1,19 @@
 // authRoutes.js
 
 const express = require('express');
-const mongoose = require('mongoose');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const AppleStrategy = require('passport-apple');
-const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const nodemailer = require('nodemailer');
-const crypto = require('crypto');
 const twilio = require('twilio');
-
+const { generateToken, generateOTP, generateVerificationToken } = require('../helper/Auth/auth');
+const transporter = require('../helper/emailTransporter/EmailTransforter');
 const router = express.Router();
+const { formatMobile, formatEmail } = require('../helper/format/fomvalidtion');
 
-// ======== Schema Definition ========
-const userSchema = new mongoose.Schema({
-    email: { type: String, required: false, unique: true },
-    password: { type: String },
-    mobile: { type: String, unique: true, sparse: true },
-    isEmailVerified: { type: Boolean, default: false },
-    isMobileVerified: { type: Boolean, default: false },
-    verificationToken: { type: String },
-    authProvider: { type: String, enum: ['local', 'google', 'apple'], default: 'local' },
-    providerId: { type: String },
-    otp: { type: String },
-    resendattempt: { type: Number, default: 0 },
-    role: { type: String, default: 'user' },
-    vehicle: { type: String },
-    resendattempt: { type: Number, default: 0 },
-    address: { type: String },
-    wallet: { id: { type: String }, balance: { type: Number, default: 0 } },
-    otpExpiry: { type: Date }
-});
-const User = mongoose.model('User', userSchema);
 
-// ======== Config & Helpers ========
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
-// Create a nodemailer transporter for sending emails
-const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || "smtp.hostinger.com",
-    port: Number(process.env.EMAIL_PORT) || 465,
-    secure: true,
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    },
-    tls: { ciphers: "SSLv3" }
-});
 
-/**
- * Formats a mobile number.
- * If not already in international format, prepends a default country code.
- */
-function formatMobile(mobile) {
-    if (!mobile) return null;
-    mobile = mobile.replace(/\s+/g, '');
-    return mobile.startsWith('+') ? mobile : `+91${mobile}`;
-}
-
-/**
- * Generates a random 6-digit OTP.
- */
-function generateOTP() {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-/**
- * Generates a JWT token.
- */
-function generateToken(user) {
-    return jwt.sign(
-        { userId: user._id, email: user.email },
-        JWT_SECRET,
-        { expiresIn: JWT_EXPIRES_IN }
-    );
-}
-
-/**
- * Generates a secure email verification token.
- */
-function generateVerificationToken() {
-    return crypto.randomBytes(16).toString('hex');
-}
 
 // ======== Routes ========
 
@@ -94,7 +24,7 @@ function generateVerificationToken() {
 router.post('/signup', async (req, res) => {
     try {
         const { email, password, mobile } = req.body;
-        if (!email || !password || !mobile) {
+        if (!email || !password) {
             return res.status(400).json({ message: 'Email and password are required.' });
         }
 
@@ -108,7 +38,7 @@ router.post('/signup', async (req, res) => {
         const verificationToken = generateVerificationToken();
 
         const newUser = new User({
-            email,
+            email: email ? formatEmail(email) : undefined,
             password: hashedPassword,
             mobile: mobile ? formatMobile(mobile) : undefined,
             authProvider: 'local',
@@ -172,9 +102,6 @@ router.get('/verify-email/:token', async (req, res) => {
  */
 router.post('/verify-mobile', async (req, res) => {
     try {
-
-
-
         const { mobile, otp } = req.body;
         if (!mobile || !otp) {
             return res.status(400).json({ message: 'Mobile number and OTP are required.' });
@@ -238,9 +165,15 @@ router.post('/login-email', async (req, res) => {
     try {
         const { email, password } = req.body;
         if (!email || !password) {
-            return res.status(400).json({ message: 'Email, mobile and password are required.' });
+            return res.status(400).json({ message: 'Email and password are required.' });
         }
+
+
         const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ message: 'User not found.' });
+        }
+
         if (!user || user.authProvider !== 'local') {
             return res.status(400).json({ message: 'Invalid credentials.' });
         }
@@ -254,7 +187,6 @@ router.post('/login-email', async (req, res) => {
             return res.status(400).json({ message: 'Please verify your email first.' });
         }
 
-        const verificationLink = `${req.protocol}://${req.get('host')}/api/auth/verify-email/${user.verificationToken}`;
         await transporter.sendMail({
             from: process.env.EMAIL_USER,
             to: email,
@@ -264,7 +196,9 @@ router.post('/login-email', async (req, res) => {
         <p>Your account was just logged into from a new device.</p>
         <p>If this was you, you can ignore this email.</p>
         <p>If this wasn't you, please click the link below to secure your account:</p>
-        <a href="${verificationLink}">Secure Account</a>
+        <p> From IP: ${req.ip}</p>
+        <p> At: ${new Date().toLocaleString()}</p>
+
         `
         });
 

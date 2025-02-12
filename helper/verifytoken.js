@@ -1,13 +1,25 @@
-
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
 async function verifyToken(req, res, next) {
-    const bearerHeader = req.headers['authorization'];
-    if (typeof bearerHeader !== 'undefined') {
-        const bearer = bearerHeader.split(' ');
-        const bearerToken = bearer[1];
-        req.token = bearerToken;
+    const token = req.headers['authorization'];
+
+    if (!token) {
+        return res.status(401).json({ message: 'No token provided' });
+    }
+
+    try {
+        const decoded = jwt.verify(token.split(' ')[1], process.env.JWT_SECRET);
+        const user = await User.findById(decoded.userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        req.user = user;
         next();
-    } else {
-        res.sendStatus(403);
+    } catch (error) {
+        console.error(error);
+        res.status(401).json({ message: 'Invalid token' });
     }
 }
+
+module.exports = verifyToken;
