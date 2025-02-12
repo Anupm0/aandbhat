@@ -211,7 +211,7 @@ router.post('/login-email', async (req, res) => {
         <p>Your account was just logged into from a new device.</p>
         <p>If this was you, you can ignore this email.</p>
         <p>If this wasn't you, please click the link below to secure your account:</p>
-        <p> From IP: ${req.host}</p>
+        
         <p> At: ${new Date().toLocaleString()}</p>
 
         `
