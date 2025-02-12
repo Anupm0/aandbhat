@@ -10,7 +10,7 @@ const { generateToken, generateOTP, generateVerificationToken } = require('../he
 const transporter = require('../helper/emailTransporter/EmailTransforter');
 const router = express.Router();
 const { formatMobile, formatEmail } = require('../helper/format/fomvalidtion');
-
+const User = require('../modals/user');
 
 
 

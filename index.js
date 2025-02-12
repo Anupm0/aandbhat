@@ -50,6 +50,11 @@ const authRoutes = require('./router/routelogin');
 // Use routes
 app.use('/api/auth', authRoutes);
 
+app.use('/api/profile', require('./router/Profile'));
+
+
+
+
 // Basic error handling
 app.use((err, req, res, next) => {
     console.error(err.stack);
