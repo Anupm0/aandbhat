@@ -24,27 +24,40 @@ const User = require('../modals/user');
 router.post('/signup', async (req, res) => {
     try {
         const { email, password, mobile } = req.body;
-        if (!email || !password) {
-            return res.status(400).json({ message: 'Email and password are required.' });
-        }
 
-        // Check if the user already exists.
-        const existingUser = await User.findOne({ email });
+        // Format and validate inputs
+        const formattedEmail = formatEmail(email);
+        const formattedMobile = mobile ? formatMobile(mobile) : undefined;
+
+        // Check if the user already exists
+        const existingUser = await User.findOne({
+            $or: [
+                { email: formattedEmail },
+                { mobile: formattedMobile }
+            ]
+        });
+
         if (existingUser) {
-            return res.status(400).json({ message: 'Email already registered.' });
+            return res.status(400).json({
+                message: existingUser.email === formattedEmail
+                    ? 'Email already registered.'
+                    : 'Mobile number already registered.'
+            });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const verificationToken = generateVerificationToken();
 
         const newUser = new User({
-            email: email ? formatEmail(email) : undefined,
+            email: formattedEmail,
             password: hashedPassword,
-            mobile: mobile ? formatMobile(mobile) : undefined,
+            mobile: formattedMobile,
             authProvider: 'local',
             verificationToken
         });
+
         await newUser.save();
+
 
         // Create a verification link.
         const protocol = req.protocol;
@@ -68,10 +81,11 @@ router.post('/signup', async (req, res) => {
         res.status(201).json({ message: 'Registration successful. Check your email to verify your account.' });
     } catch (error) {
         console.error('Signup error:', error);
-        res.status(500).json({ message: 'Internal server error', error: error.message });
+        res.status(400).json({
+            message: error.message || 'Invalid input data',
+        });
     }
 });
-
 /**
  * GET /verify-email/:token/
  * Verifies a user's email address.
