@@ -234,7 +234,7 @@ router.post('/send-otp-mobile', async (req, res) => {
  * POST /login
  * Authenticates a user using email and password, then sends an OTP.
  */
-router.post('/login-second', async (req, res) => {
+router.post('/login-email', async (req, res) => {
     try {
         const { email, password } = req.body;
         if (!email || !password) {
@@ -269,7 +269,7 @@ router.post('/login-second', async (req, res) => {
         });
 
         const token = generateToken(user);
-        res.json({ token });
+        res.status(201).json({ token });
     } catch (error) {
         console.error('Login error:', error);
         res.status(500).json({ message: 'Internal server error', error: error.message });
