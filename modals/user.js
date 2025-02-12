@@ -89,6 +89,8 @@ userSchema.pre('save', async function (next) {
         this.wallet.id = generateWalletId();
     }
 
+    //check 
+
 
     if (this.vehicles && this.vehicles.length > 0) {
         const hasDefault = this.vehicles.some(v => v.isDefault);
