@@ -2,7 +2,7 @@
 const express = require('express');
 const passport = require('passport');
 const cors = require('cors');
-const connectDB = require('./helper/mongooesdbconnect');
+const connectDB = require('./helper/utils/mongooesdbconnect');
 require('dotenv').config();
 const logger = require('./helper/utils/Logger')
 
@@ -27,6 +27,8 @@ app.use(cors(
     }
 ));
 
+
+
 app.use(passport.initialize());
 
 
@@ -43,14 +45,14 @@ connectDB(process.env.MONGODB_URI);
 
 
 // Import routes
-const authRoutes = require('./router/routelogin');
+const authRoutes = require('./router/User/routelogin');
 
 
 
 // Use routes
 app.use('/api/auth', authRoutes);
 
-app.use('/api/profile', require('./router/Profile'));
+app.use('/api/profile', require('./router/User/Profile'));
 
 
 

@@ -1,8 +1,8 @@
 const express = require('express');
 const { Mongoose } = require('mongoose');
 const mongoose = require('mongoose');
-const verifyToken = require('../helper/verifytoken');
-const User = require('../modals/user');
+const verifyToken = require('../../helper/utils/verifytoken');
+const User = require('../../modals/user');
 
 const router = express.Router();
 
