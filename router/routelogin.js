@@ -226,6 +226,7 @@ router.post('/login-email', async (req, res) => {
 
 
 router.post('/login', async (req, res) => {
+    //use default ok response
     try {
         const { mobile } = req.body;
         if (!mobile) {
@@ -251,7 +252,7 @@ router.post('/login', async (req, res) => {
             to: formatMobile(mobile)
         });
 
-        res.json({ message: 'OTP sent successfully.' });
+        res.status(201).json({ message: 'OTP sent successfully.' });
 
     } catch (error) {
         console.error('Login error:', error);
@@ -275,7 +276,7 @@ router.post('/verify-login-otp', async (req, res) => {
         user.otpExpiry = undefined;
         await user.save();
         const token = generateToken(user);
-        res.json({ token, message: 'Login successful' });
+        res.status(201).json({ token, message: 'Login successful' });
 
     } catch (error) {
         console.error('OTP verification error:', error);
@@ -397,7 +398,7 @@ router.post('/reset-password', async (req, res) => {
         user.otp = undefined;
         user.otpExpiry = undefined;
         await user.save();
-        res.json({ message: 'Password reset successful.' });
+        res.status(201).json({ message: 'Password reset successful.' });
     } catch (error) {
         console.error('Reset password error:', error);
         res.status(500).json({ message: 'Internal server error', error: error.message });
