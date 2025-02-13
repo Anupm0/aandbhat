@@ -371,7 +371,7 @@ router.post('/forgot-password', async (req, res) => {
             subject: 'Password Reset Code',
             text: `Your password reset code is: ${otp}`
         });
-        res.json({ message: 'OTP sent successfully.' });
+        res.json({ message: 'OTP sent to email successfully.' });
     } catch (error) {
         console.error('Forgot password error:', error);
         res.status(500).json({ message: 'Internal server error', error: error.message });
