@@ -1,8 +1,8 @@
 const express = require('express');
-const { Mongoose } = require('mongoose');
-const mongoose = require('mongoose');
 const verifyToken = require('../../helper/utils/verifytoken');
 const User = require('../../modals/user');
+const bcrypt = require('bcrypt');
+const { generateToken } = require('../../helper/Auth/auth');
 
 const router = express.Router();
 
@@ -158,7 +158,9 @@ router.put('/me', verifyToken, async (req, res) => {
         user.email = email || user.email;
         user.mobile = mobile || user.mobile;
         user.address = address || user.address;
-        user.password = await bcrypt.hash(password, 10)
+        if (password) {
+            user.password = await bcrypt.hash(password, 10);
+        }
         await user.save();
         const token = generateToken(user);
         res.status(201).json({ token: token });

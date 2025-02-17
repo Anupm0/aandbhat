@@ -25,20 +25,19 @@ router.post('/signup', async (req, res) => {
     try {
         const { email, firstName, lastName, password, mobile } = req.body;
 
-        // Format and validate inputs
         const formattedEmail = formatEmail(email);
         const formattedMobile = mobile ? formatMobile(mobile) : undefined;
 
-        // Check if the user already exists
         const existingUser = await User.findOne({
             $or: [
                 { email: formattedEmail },
-                { mobile: formattedMobile },
+                { mobile: formattedMobile }
 
             ]
         });
 
         if (existingUser) {
+            console.log('User already exists', existingUser);
             return res.status(400).json({ message: 'User already exists' });
         }
 
