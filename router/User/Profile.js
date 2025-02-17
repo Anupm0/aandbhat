@@ -65,4 +65,78 @@ router.post('/addvehicle', verifyToken, async (req, res) => {
     }
 });
 
+router.put('/vehicle/:vehicleId/default', verifyToken, async (req, res) => {
+    try {
+        const vehicleId = req.params.vehicleId;
+
+        // Fetch the current user document
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Find the vehicle by ID
+        const vehicle = user.vehicles.id(vehicleId);
+        if (!vehicle) {
+            return res.status(404).json({ message: 'Vehicle not found' });
+        }
+
+        // Unset default on all vehicles
+        user.vehicles = user.vehicles.map(v => ({ ...v.toObject(), isDefault: false }));
+
+        // Set the selected vehicle as default
+        vehicle.isDefault = true;
+
+        // Save the user document
+        const updatedUser = await user.save();
+
+        res.status(200).json(updatedUser);
+    } catch (error) {
+        console.error('Error setting default vehicle:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+
+
+
+
+
+    router.get('/profile', verifyToken, async (req, res) => {
+        try {
+            // Fetch the user document
+            const user = await User.findById(req.user._id);
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            res.json(user);
+        } catch (error) {
+            console.error('Error fetching user profile:', error);
+            res.status(500).json({ message: 'Internal server error' });
+        }
+    }
+    );
+
+
+
+});
+
+router.get('/api/me', verifyToken, async (req, res) => {
+    try {
+        //remove password and otp from user object 
+        const user = await User.findById(req.user._id).select('-password -otp -providerId -verificationToken  -otpExpiry');
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        res.json(user);
+    } catch (error) {
+        console.error('Error fetching user profile:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+
+
+
+
 module.exports = router;

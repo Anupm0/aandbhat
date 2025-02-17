@@ -23,7 +23,7 @@ const User = require('../../modals/user');
  */
 router.post('/signup', async (req, res) => {
     try {
-        const { email, password, mobile } = req.body;
+        const { email, firstname, lastname, password, mobile } = req.body;
 
         // Format and validate inputs
         const formattedEmail = formatEmail(email);
@@ -33,7 +33,8 @@ router.post('/signup', async (req, res) => {
         const existingUser = await User.findOne({
             $or: [
                 { email: formattedEmail },
-                { mobile: formattedMobile }
+                { mobile: formattedMobile },
+
             ]
         });
 
@@ -48,9 +49,10 @@ router.post('/signup', async (req, res) => {
         const newUser = new User({
             email: formattedEmail,
             password: hashedPassword,
+            firstname,
+            lastname,
             mobile: formattedMobile,
             authProvider: 'local',
-
             verificationToken
         });
 
@@ -68,7 +70,7 @@ router.post('/signup', async (req, res) => {
             to: email,
             subject: 'Verify Your Email',
             html: `
-        <h1>Email Verification</h1>
+        <h1>Email Verification For </h1>
         <p>Please click the link below to verify your email address:</p>
         <a href="${verificationLink}">Verify Email</a>
         <p>This link will expire in 24 hours.</p>
