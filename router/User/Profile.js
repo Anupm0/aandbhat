@@ -120,6 +120,7 @@ router.put('/vehicle/:vehicleId/default', verifyToken, async (req, res) => {
 
 });
 
+
 router.get('/me', verifyToken, async (req, res) => {
     try {
         //remove password and otp from user object 
@@ -128,7 +129,7 @@ router.get('/me', verifyToken, async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        res.json(user);
+        res.status(201).json(user);
     } catch (error) {
         console.error('Error fetching user profile:', error);
         res.status(500).json({ message: 'Internal server error' });
