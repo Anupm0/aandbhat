@@ -120,7 +120,7 @@ router.put('/vehicle/:vehicleId/default', verifyToken, async (req, res) => {
 
 });
 
-router.get('/api/me', verifyToken, async (req, res) => {
+router.get('/me', verifyToken, async (req, res) => {
     try {
         //remove password and otp from user object 
         const user = await User.findById(req.user._id).select('-password -otp -providerId -verificationToken  -otpExpiry');
