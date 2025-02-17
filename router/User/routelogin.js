@@ -211,7 +211,7 @@ router.post('/login-email', async (req, res) => {
         <p>If this was you, you can ignore this email.</p>
         <p>If this wasn't you, please click the link below to secure your account:</p>
         
-        <p> At: ${new Date().toLocaleString()}</p>
+        <p> At: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
 
         `
         });
