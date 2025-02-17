@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-    name: String,
+
     email: {
         type: String,
         unique: true,
@@ -93,7 +93,6 @@ userSchema.pre('save', async function (next) {
         this.wallet.id = generateWalletId();
     }
 
-    //check  if wallet id is unique and generate new one if not
     const walletIdExists = await this.constructor.findOne({ 'wallet.id': this.wallet.id });
     if (walletIdExists) {
         this.wallet.id = generateWalletId();

@@ -23,7 +23,7 @@ const User = require('../../modals/user');
  */
 router.post('/signup', async (req, res) => {
     try {
-        const { email, firstname, lastname, password, mobile } = req.body;
+        const { email, firstName, lastName, password, mobile } = req.body;
 
         // Format and validate inputs
         const formattedEmail = formatEmail(email);
@@ -49,8 +49,8 @@ router.post('/signup', async (req, res) => {
         const newUser = new User({
             email: formattedEmail,
             password: hashedPassword,
-            firstname,
-            lastname,
+            firstName,
+            lastName,
             mobile: formattedMobile,
             authProvider: 'local',
             verificationToken
