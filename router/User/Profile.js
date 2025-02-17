@@ -137,6 +137,38 @@ router.get('/me', verifyToken, async (req, res) => {
 });
 
 
+// fn\
+// ln
+// eamai
+// pass
+// mobi
+// addr
+
+
+router.put('/me', verifyToken, async (req, res) => {
+    try {
+        const { firstName, lastName, email, mobile, password, address } = req.body;
+
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        user.firstName = firstName || user.firstName;
+        user.lastName = lastName || user.lastName;
+        user.email = email || user.email;
+        user.mobile = mobile || user.mobile;
+        user.address = address || user.address;
+        user.password = await bcrypt.hash(password, 10)
+        await user.save();
+        const token = generateToken(user);
+        res.status(201).json({ token: token });
+    } catch (error) {
+        console.error('Error updating user profile:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+
 
 
 
