@@ -1,3 +1,5 @@
+
+const mongoose = require('mongoose');
 const ratingSchema = new mongoose.Schema({
     driverId: { type: mongoose.Schema.Types.ObjectId, ref: 'Driver', required: true },
     passengerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },

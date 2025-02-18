@@ -137,13 +137,6 @@ router.get('/me', verifyToken, async (req, res) => {
 });
 
 
-// fn\
-// ln
-// eamai
-// pass
-// mobi
-// addr
-
 
 router.put('/me', verifyToken, async (req, res) => {
     try {

@@ -120,16 +120,8 @@ userSchema.methods.setDefaultVehicle = async function (carRegno) {
     return this.save();
 };
 
-
-
-
 const User = mongoose.model('User', userSchema);
-
 module.exports = User;
-
-
-
-
 const generateWalletId = () => {
     const prefix = 'WALLET';
     const random = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');

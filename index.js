@@ -4,8 +4,14 @@ const passport = require('passport');
 const cors = require('cors');
 const connectDB = require('./helper/utils/mongooesdbconnect');
 require('dotenv').config();
-const logger = require('./helper/utils/Logger')
+const logger = require('./helper/utils/Logger');
 
+// Import models to ensure schemas are created
+require('./modals/Driver');
+require('./modals/DriverCategories');
+require('./modals/History');
+require('./modals/Rating');
+require('./modals/user');
 
 const app = express();
 
@@ -74,3 +80,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+
