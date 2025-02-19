@@ -3,7 +3,6 @@ const router = express.Router();
 
 const DriverCategory = require('../../modals/DriverCategories');
 
-// Get all driver categories
 router.get('/', async (req, res) => {
     try {
         const categories = await DriverCategory.find();
@@ -13,7 +12,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Get a single driver category by name
 router.get('/:name', async (req, res) => {
     try {
         const category = await DriverCategory.findOne({ name: req.params.name });
@@ -28,7 +26,6 @@ router.get('/:name', async (req, res) => {
 
 
 
-// Create a new driver category
 router.post('/', async (req, res) => {
     const { name, description } = req.body;
 
@@ -46,20 +43,19 @@ router.post('/', async (req, res) => {
 });
 
 
-// Update a driver category
+
+
+
 router.put('/:name', async (req, res) => {
     const { name, description } = req.body;
-
     if (!name || !description) {
         return res.status(400).json({ message: 'name and description are required' });
     }
-
     try {
         const category = await DriverCategory.findOne({ name: req.params.name });
         if (!category) {
             return res.status(404).json({ message: 'Category not found' });
         }
-
         category.name = name;
         category.description = description;
         await category.save();
@@ -70,7 +66,8 @@ router.put('/:name', async (req, res) => {
 });
 
 
-// Delete a driver category
+
+
 router.delete('/:name', async (req, res) => {
     try {
         const category = await DriverCategory.findOne({ name: req.params.name });
