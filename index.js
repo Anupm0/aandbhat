@@ -76,6 +76,11 @@ app.get('/', (req, res) => {
 );
 
 
+app.use(require('./router/assets/categoryImage'))
+
+
+
+
 
 // Start server
 const PORT = process.env.PORT || 3000;
