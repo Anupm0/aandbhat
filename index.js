@@ -12,7 +12,7 @@ require('./modals/DriverCategories');
 require('./modals/History');
 require('./modals/Rating');
 require('./modals/user');
-
+require('./modals/Admin');
 const app = express();
 
 // Logging middleware
@@ -59,9 +59,7 @@ const authRoutes = require('./router/User/routelogin');
 app.use('/api/auth', authRoutes);
 
 app.use('/api/profile', require('./router/User/Profile'));
-
-
-
+app.use('/api/admin', require('./router/Admin/Authentication'));
 
 // Basic error handling
 app.use((err, req, res, next) => {
@@ -73,6 +71,7 @@ app.get('/', (req, res) => {
     res.send('Hello World');
 }
 );
+
 
 
 // Start server

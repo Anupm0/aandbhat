@@ -3,85 +3,36 @@ const router = express.Router();
 
 const DriverCategory = require('../../modals/DriverCategories');
 
-router.get('/', async (req, res) => {
+router.post('/login', async (req, res) => {
     try {
-        const categories = await DriverCategory.find();
-        res.json(categories);
-    } catch (err) {
-        res.status(500).json({ message: 'Something went wrong!' });
-    }
-});
+        const { email, password } = req.body;
 
-router.get('/:name', async (req, res) => {
-    try {
-        const category = await DriverCategory.findOne({ name: req.params.name });
-        if (!category) {
-            return res.status(404).json({ message: 'Category not found' });
-        }
-        res.json(category);
-    } catch (err) {
-        res.status(500).json({ message: 'Something went wrong!' });
-    }
-});
-
-
-
-router.post('/', async (req, res) => {
-    const { name, description } = req.body;
-
-    if (!name || !description) {
-        return res.status(400).json({ message: 'name and description are required' });
-    }
-
-    try {
-        const newCategory = new DriverCategory({ name, description });
-        await newCategory.save();
-        res.json(newCategory);
-    } catch (err) {
-        res.status(500).json({ message: 'Something went wrong!' });
-    }
-});
-
-
-
-
-
-router.put('/:name', async (req, res) => {
-    const { name, description } = req.body;
-    if (!name || !description) {
-        return res.status(400).json({ message: 'name and description are required' });
-    }
-    try {
-        const category = await DriverCategory.findOne({ name: req.params.name });
-        if (!category) {
-            return res.status(404).json({ message: 'Category not found' });
-        }
-        category.name = name;
-        category.description = description;
-        await category.save();
-        res.json(category);
-    } catch (err) {
-        res.status(500).json({ message: 'Something went wrong!' });
-    }
-});
-
-
-
-
-router.delete('/:name', async (req, res) => {
-    try {
-        const category = await DriverCategory.findOne({ name: req.params.name });
-        if (!category) {
-            return res.status(404).json({ message: 'Category not found' });
+        // Validate required fields
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email and password are required' });
         }
 
-        await category.remove();
-        res.json({ message: 'Category deleted' });
-    } catch (err) {
-        res.status(500).json({ message: 'Something went wrong!' });
+        // Fetch the user document
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Compare the password
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        // Generate the token
+        const token = generateToken(user);
+
+        res.json({ token });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal Server Error' });
     }
 });
-
 
 module.exports = router;
 

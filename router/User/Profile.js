@@ -137,6 +137,29 @@ router.get('/me', verifyToken, async (req, res) => {
 });
 
 
+router.delete('/me', verifyToken, async (req, res) => {
+    //send email to user for confirmation and redner a page to confirm delete after 30 days delete user
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        //30 days from now
+        const thirtyDaysFromNow = new Date();
+        thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+        user.deleteAccountToken = thirtyDaysFromNow;
+        await user.save();
+        res.status(201).json({ message: 'User delete request sent successfully' });
+
+        res.status(201).json({ message: 'User deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+
+});
+
 
 router.put('/me', verifyToken, async (req, res) => {
     try {

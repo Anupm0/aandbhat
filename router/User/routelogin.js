@@ -200,20 +200,20 @@ router.post('/login-email', async (req, res) => {
             return res.status(400).json({ message: 'Please verify your email first.' });
         }
 
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
-            to: email,
-            subject: 'Login Alert',
-            html: `
-        <h1>Login Alert</h1>
-        <p>Your account was just logged into from a new device.</p>
-        <p>If this was you, you can ignore this email.</p>
-        <p>If this wasn't you, please click the link below to secure your account:</p>
-        
-        <p> At: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
+        // await transporter.sendMail({
+        //     from: process.env.EMAIL_USER,
+        //     to: email,
+        //     subject: 'Login Alert',
+        //     html: `
+        // <h1>Login Alert</h1>
+        // <p>Your account was just logged into from a new device.</p>
+        // <p>If this was you, you can ignore this email.</p>
+        // <p>If this wasn't you, please click the link below to secure your account:</p>
 
-        `
-        });
+        // <p> At: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
+
+        // `
+        // });
 
         const token = generateToken(user);
         res.status(201).json({ token });
