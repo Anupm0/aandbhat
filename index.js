@@ -61,6 +61,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/profile', require('./router/User/Profile'));
 app.use('/api/admin', require('./router/Admin/Authentication'));
 
+app.use('/api/driver', require('./router/driver/category'))
+
+
 // Basic error handling
 app.use((err, req, res, next) => {
     console.error(err.stack);

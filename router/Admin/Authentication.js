@@ -257,6 +257,35 @@ router.post('/forgot-password', async (req, res) => {
  * @route   POST /reset-password
  * @desc    Reset password using the OTP
  */
+
+
+
+
+router.get('/verify-email/:token', async (req, res) => {
+    try {
+        const token = req.params.token;
+        const admin = await Admin.findOne({ verificationToken: token });
+        if (!admin) {
+            return res.status(400).json({ message: 'Invalid or expired token' });
+        }
+
+        admin.isEmailVerified = true;
+        admin.verificationToken = null;
+        await admin.save();
+
+        res.json({ message: 'Email verified successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+
+// router.get('/reset-password/:resettoken', async(req,res)=>{
+//     const resettoken = req.params.resettoken
+
+// } )
+
 router.post('/reset-password', async (req, res) => {
     try {
         const { email, otp, newPassword } = req.body;
@@ -264,16 +293,13 @@ router.post('/reset-password', async (req, res) => {
         if (!admin) {
             return res.status(400).json({ message: 'Admin with this email does not exist' });
         }
-        // Verify OTP and expiry
         if (admin.otp !== otp || admin.otpExpiry < new Date()) {
             return res.status(400).json({ message: 'Invalid or expired OTP' });
         }
 
-        // Hash new password and update admin record
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(newPassword, salt);
         admin.password = hashedPassword;
-        // Clear OTP fields
         admin.otp = null;
         admin.otpExpiry = null;
         await admin.save();
