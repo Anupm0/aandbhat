@@ -7,7 +7,7 @@ router.get('/api/assets/categoryImage/:id', async (req, res) => {
     const path = require('path');
     const fs = require('fs');
     let directoryPath
-    if (!isIcon) {
+    if (isIcon === 'false') {
         directoryPath = path.join(__dirname, '../../assets/categoryImages');
     }
 
