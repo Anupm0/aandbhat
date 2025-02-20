@@ -3,9 +3,21 @@ const router = express.Router();
 
 router.get('/api/assets/categoryImage/:id', async (req, res) => {
     const id = req.params.id;
+    const isIcon = req.query.isIcon;
     const path = require('path');
     const fs = require('fs');
-    const directoryPath = path.join(__dirname, '../../assets/categoryImages');
+    let directoryPath
+    if (!isIcon) {
+        directoryPath = path.join(__dirname, '../../assets/categoryImages');
+    }
+
+    else {
+        directoryPath = path.join(__dirname, '../../assets/categoryIcons');
+    }
+
+    if (directoryPath == null) {
+        return res.status(400).json({ message: 'Invalid request' });
+    }
 
     fs.readdir(directoryPath, (err, files) => {
         if (err) {
@@ -22,6 +34,7 @@ router.get('/api/assets/categoryImage/:id', async (req, res) => {
             res.status(404).json({ message: 'Image not found' });
         }
     });
+
 });
 
 module.exports = router;
