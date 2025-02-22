@@ -75,6 +75,27 @@ const driverSchema = new mongoose.Schema({
             required: true
         }
     },
+    verificationToken: {
+        type: String,
+        required: false
+    },
+    isEmailVerified: {
+        type: Boolean,
+        default: false
+    },
+    isMobileVerified: {
+        type: Boolean,
+        default: false
+    },
+    otp: {
+        type: String
+    },
+    otpExpiry: {
+        type: Date
+    },
+    lastLogin: {
+        type: Date
+    },
     assignedVehicles: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Vehicle'

@@ -1,5 +1,5 @@
 const express = require('express');
-const verifyToken = require('../../helper/utils/verifytoken');
+const verifyToken = require('../../helper/utils/verifytokenUsers');
 const User = require('../../modals/user');
 const bcrypt = require('bcrypt');
 const { generateToken } = require('../../helper/Auth/auth');
