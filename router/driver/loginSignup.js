@@ -49,7 +49,7 @@ router.post('/sign-up-driver', async (req, res) => {
         });
         await newDriver.save();
 
-        const verificationLink = `${req.protocol}://${req.hostname}/api/auth/driver/verify-email?token=${verificationToken}`;
+        const verificationLink = `${req.protocol}://${req.hostname}/api/auth/driver/verify-driver-email?token=${verificationToken}`;
         console.log('verificationLink:', verificationLink);
 
         await transporter.sendMail({
