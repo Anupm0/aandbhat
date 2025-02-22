@@ -62,6 +62,7 @@ app.use('/api/profile', require('./router/User/Profile'));
 app.use('/api/admin', require('./router/Admin/Authentication'));
 
 app.use('/api/auth/driver', require('./router/driver/loginSignup'))
+app.use('/api/driver', require('./router/driver/category'))
 
 
 // Basic error handling
