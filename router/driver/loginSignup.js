@@ -2,7 +2,6 @@ const router = require('express').Router();
 
 const { generateToken } = require('../../helper/Auth/auth');
 const Driver = require('../../modals/Driver');
-const User = require('../../modals/user');
 
 
 
@@ -10,9 +9,9 @@ const User = require('../../modals/user');
 
 
 router.post('/sign-up-driver', async (req, res) => {
-    const { firstName, lastName, email, mobile, password, address, yearsOfExperience, previousCar, aadharCardNumber, panCardNumber, licenseNumber, licenseExpiry, bankDetails } = req.body;
+    const { firstName, lastName, email, phoneNumber, password, address, yearsOfExperience, previousCar, aadharCardNumber, panCardNumber, licenseNumber, licenseExpiry, bankDetails } = req.body;
 
-    if (!firstName || !lastName || !email || !mobile || !password || !address || !yearsOfExperience || !previousCar || !aadharCardNumber || !panCardNumber || !licenseNumber || !licenseExpiry || !bankDetails) {
+    if (!firstName || !lastName || !email || !phoneNumber || !password || !address || !yearsOfExperience || !previousCar || !aadharCardNumber || !panCardNumber || !licenseNumber || !licenseExpiry || !bankDetails) {
         return res.status(400).json({ message: 'Please enter all fields' });
     }
 
@@ -37,7 +36,7 @@ router.post('/sign-up-driver', async (req, res) => {
             firstName,
             lastName,
             email,
-            mobile,
+            phoneNumber,
             password,
             address,
             yearsOfExperience,
