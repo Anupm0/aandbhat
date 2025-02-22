@@ -73,16 +73,17 @@ router.post('/sign-up-driver', async (req, res) => {
 });
 
 router.get('/verify-driver-email', async (req, res) => {
-    const { verificationToken } = req.query;
+    const { token: verificationToken } = req.query;
     if (!verificationToken) {
         return res.status(400).json({ message: 'Invalid request' });
     }
     try {
         const driver = await Driver.findOne({ verificationToken });
         if (!driver) {
-            return res.status(400).json({ message: 'Invalid request' });
+
+            return res.status(400).json({ message: 'Invalid driver token' });
         }
-        driver.isVerified = true;
+        driver.isEmailVerified = true;
         driver.verificationToken = '';
         await driver.save();
         return res.status(201).json({ message: 'Email verified successfully' });
@@ -246,6 +247,33 @@ router.post('/login-driver-email', async (req, res) => {
         if (!driver) {
             return res.status(400).json({ message: 'User does not exist' });
         }
+        driver.verificationToken = generateVerificationToken();
+        await driver.save();
+
+        const verificationLink = `${req.protocol}://${req.hostname}/api/auth/driver/verify-driver-email?token=${driver.verificationToken}`;
+
+        console.log('driver:', driver);
+
+        if (driver.isEmailVerified === false) {
+
+
+            await transporter.sendMail({
+                from: process.env.EMAIL_USER,
+                to: email,
+                subject: 'Verify Your Email',
+                html: `
+                <h1>Email Verification For ${driver.firstName} ${driver.lastName}</h1>
+                <p>Please click the link below to verify your email address:</p>
+                <a href="${verificationLink}">Verify Email</a>
+                <p>This link will expire in 24 hours.</p>
+                <p>If you did not create an account, please ignore this email.</p>
+            `
+            });
+
+            console.log('verificationLink:', verificationLink);
+            return res.status(400).json({ message: 'Please verify your email' });
+        }
+
 
         const isMatch = await bcrypt.compare(password, driver.password);
         if (!isMatch) {

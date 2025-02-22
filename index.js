@@ -64,6 +64,7 @@ app.use('/api/admin', require('./router/Admin/Authentication'));
 app.use('/api/auth/driver', require('./router/driver/loginSignup'))
 app.use('/api/driver', require('./router/driver/category'))
 
+app.use('/api/driver', require('./router/driver/profile'))
 
 // Basic error handling
 app.use((err, req, res, next) => {
@@ -84,8 +85,15 @@ app.use(require('./router/assets/categoryImage'))
 
 
 // Start server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    //lost all available routes
+    console.log(`Server started on host ${process.env.HOST || '0.0.0.0'} and port  ${PORT}`);
+
+    app._router.stack.forEach((r) => {
+        if (r.route && r.route.path) {
+            console.log(r.route.path);
+        }
+    });
 });
 

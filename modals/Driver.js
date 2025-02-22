@@ -109,9 +109,52 @@ const driverSchema = new mongoose.Schema({
         type: String,
         enum: ['pending', 'verified', 'failed'],
         default: 'pending'
-    }
+    },
+    wallet: {
+        id: String,
+        balance: {
+            type: Number,
+            default: 0
+        },
+        logs: [{
+            type: {
+                type: String,
+                enum: ['credit', 'debit']
+            },
+            amount: Number,
+            timestamp: Date
+        }]
+    },
+
+
+
+
 }, { timestamps: true });
 
+
+
+
+
+
+driverSchema.pre('save', function (next) {
+    if (!this.driverId) {
+        this.driverId = generateDriver();
+    }
+    next();
+});
+
+
+
+const generateWalletId = () => {
+    const prefix = 'WALLET';
+    const random = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+    return `${prefix}-${random}`;
+};
+
+
+
 const Driver = mongoose.model('Driver', driverSchema);
+
+
 
 module.exports = Driver;
