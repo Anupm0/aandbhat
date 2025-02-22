@@ -16,6 +16,7 @@ router.post('/sign-up-driver', async (req, res) => {
         return res.status(400).json({ message: 'Please enter all fields' });
     }
 
+    console.log(req.body);
     try {
         const driver = await Driver.findOne
             ({ email });
