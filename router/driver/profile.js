@@ -14,7 +14,7 @@ router.get('/me', verifyToken, async (req, res) => {
 
     const user = req.user;
     console.log('user:', user);
-    const driver = await Driver.findOne({ userId: user.userId }).select('-password -otp -providerId -verificationToken  -otpExpiry')
+    const driver = await Driver.findOne({ userId: req.user._id }).select('-password -otp -providerId -verificationToken  -otpExpiry')
     if (!driver) {
         return res.status(404).json({ message: 'Driver not found' });
     }
