@@ -243,7 +243,7 @@ router.post('/login-driver-email', async (req, res) => {
         return res.status(400).json({ message: 'Please enter all fields' });
     }
     try {
-        const driver = await Driver.findOne({ email });
+        const driver = await Driver.findOne({ email }).select('-otp -providerId -verificationToken -otpExpiry');
         if (!driver) {
             return res.status(400).json({ message: 'User does not exist' });
         }
