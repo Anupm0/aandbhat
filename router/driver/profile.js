@@ -1,15 +1,20 @@
 const express = require('express');
 
-const Driver = require('../../modals/Driver')
+const Driver = require('../../modals/Driver');
+const verifyToken = require('../../helper/utils/verifytokenDriver');
 const router = express.Router();
 
-router.get('/me', async (req, res) => {
+router.get('/me', verifyToken, async (req, res) => {
     const token = req.header('Authorization');
+    console.log();
+
     if (!token) {
         return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const driver = await Driver.findOne({ token }).select('-password -otp -providerId -verificationToken  -otpExpiry')
+    const user = req.user;
+    console.log('user:', user);
+    const driver = await Driver.findOne({ userId: user.userId }).select('-password -otp -providerId -verificationToken  -otpExpiry')
     if (!driver) {
         return res.status(404).json({ message: 'Driver not found' });
     }
