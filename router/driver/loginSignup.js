@@ -49,8 +49,7 @@ router.post('/sign-up-driver', async (req, res) => {
             bankDetails
         });
         await newDriver.save();
-        const token = generateToken(newDriver);
-        return res.status(201).json({ token: token });
+        return res.status(201).json({ message: "Registration Successfull" });
     }
     catch (err) {
         return res.status(500).json({ message: 'Server Error' });
