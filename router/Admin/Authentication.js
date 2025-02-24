@@ -58,71 +58,71 @@ const authenticate = (req, res, next) => {
  * @route   POST /signup
  * @desc    Register a new admin
  */
-router.post('/signup', async (req, res) => {
-    try {
-        const { email, password, username, firstname, lastname, mobile } = req.body;
+// router.post('/signup', async (req, res) => {
+//     try {
+//         const { email, password, username, firstname, lastname, mobile } = req.body;
 
-        // Check if an admin already exists with the given email or mobile
-        const existingAdmin = await Admin.findOne({ $or: [{ email }, { mobile }, { username }] });
-        if (existingAdmin) {
-            return res.status(400).json({ message: 'Admin with provided email or mobile already exists' });
-        }
+//         // Check if an admin already exists with the given email or mobile
+//         const existingAdmin = await Admin.findOne({ $or: [{ email }, { mobile }, { username }] });
+//         if (existingAdmin) {
+//             return res.status(400).json({ message: 'Admin with provided email or mobile already exists' });
+//         }
 
-        // Hash password before saving
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
+//         // Hash password before saving
+//         const salt = await bcrypt.genSalt(10);
+//         const hashedPassword = await bcrypt.hash(password, salt);
 
-        const admin = new Admin({
-            email,
-            password: hashedPassword,
-            firstname,
-            lastname,
-            username,
-            verificationToken: generateVerificationToken(),
-            mobile,
-        });
+//         const admin = new Admin({
+//             email,
+//             password: hashedPassword,
+//             firstname,
+//             lastname,
+//             username,
+//             verificationToken: generateVerificationToken(),
+//             mobile,
+//         });
 
-        const verificationLink = `${req.protocol}://${req.hostname}/api/auth/verify-email?token=${admin?.verificationToken}`;
+//         const verificationLink = `${req.protocol}://${req.hostname}/api/admin/auth/verify-email?token=${admin?.verificationToken}`;
 
-        await admin.save();
-
-
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: email,
-            subject: 'Email Confirmation',
+//         await admin.save();
 
 
-            //nice html and text with css and pleaseing admin to confirm there email
+//         const mailOptions = {
+//             from: process.env.EMAIL_USER,
+//             to: email,
+//             subject: 'Email Confirmation',
 
-            html: `
-            <h1>Hi ${firstname},</h1>
-            <p>Thank you for signing up with us. Please click the link below to verify your email address:</p>
-            <a href="${verificationLink}">Verify Email</a>
-            <p>If you did not sign up for this account, please ignore this email.</p>
-            <p>Regards,</p>
-            <p>Drvyy</p>
-            `,
 
-            text: `Hi ${firstname},\n\nThank you for signing up with us. Please click the link below to verify your email address:\n\n${verificationLink}\n\nIf you did not sign up for this account, please ignore this email.\n\nRegards,\nDrvyy`
-        };
+//             //nice html and text with css and pleaseing admin to confirm there email
 
-        await transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.log('Error sending email:', error);
+//             html: `
+//             <h1>Hi ${firstname},</h1>
+//             <p>Thank you for signing up with us. Please click the link below to verify your email address:</p>
+//             <a href="${verificationLink}">Verify Email</a>
+//             <p>If you did not sign up for this account, please ignore this email.</p>
+//             <p>Regards,</p>
+//             <p>Drvyy</p>
+//             `,
 
-            } else {
-                console.log('Email sent:', info.response);
+//             text: `Hi ${firstname},\n\nThank you for signing up with us. Please click the link below to verify your email address:\n\n${verificationLink}\n\nIf you did not sign up for this account, please ignore this email.\n\nRegards,\nDrvyy`
+//         };
 
-            }
-        });
+//         await transporter.sendMail(mailOptions, (error, info) => {
+//             if (error) {
+//                 console.log('Error sending email:', error);
 
-        res.status(201).json({ message: 'Admin created successfully' })
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
-    }
-});
+//             } else {
+//                 console.log('Email sent:', info.response);
+
+//             }
+//         });
+
+//         res.status(201).json({ message: 'Admin created successfully' })
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ message: 'Server error' });
+//     }
+// });
 
 /**
  * @route   POST /login
@@ -225,7 +225,6 @@ router.post('/forgot-password', async (req, res) => {
         if (!admin) {
             return res.status(400).json({ message: 'Admin with this email does not exist' });
         }
-        // Generate a 6-digit OTP
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
@@ -281,10 +280,9 @@ router.get('/verify-email/:token', async (req, res) => {
 });
 
 
-// router.get('/reset-password/:resettoken', async(req,res)=>{
-//     const resettoken = req.params.resettoken
 
-// } )
+
+
 
 router.post('/reset-password', async (req, res) => {
     try {
@@ -310,6 +308,9 @@ router.post('/reset-password', async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
+
+
+
 
 /**
  * @route   GET /me
