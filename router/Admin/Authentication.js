@@ -178,7 +178,7 @@ router.post('/login', async (req, res) => {
         const accessToken = generateAccessToken(admin);
         const refreshToken = generateRefreshToken(admin);
 
-        res.json({ accessToken, refreshToken });
+        res.status(201).json({ accessToken, refreshToken });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
@@ -225,27 +225,27 @@ router.post('/forgot-password', async (req, res) => {
         if (!admin) {
             return res.status(400).json({ message: 'Admin with this email does not exist' });
         }
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
-        admin.otp = otp;
-        admin.otpExpiry = otpExpiry;
+        const verificationToken = generateVerificationToken();
+        admin.verificationToken = verificationToken;
+        const verificationLink = `${req.protocol}://${req.hostname}/api/admin/reset-password?token=${verificationToken}`;
         await admin.save();
 
-        transporter.sendMail({
+        const mailOptions = {
             from: process.env.EMAIL_USER,
             to: email,
-            subject: 'Password Reset OTP',
-            html: `<h1>Your OTP is ${otp}</h1>`,
-            text: `Your OTP is ${otp}`
-        });
+            subject: 'Password Reset',
+            html: `
+                <h1>Hi ${admin.username},</h1>
+                <p>Please use the following Link to reset your password:</p>
+                <h2>${verificationLink}</h2>
+                <p>If you did not request this, please ignore this email.</p>
+                <p>Regards,</p>
+                <p>Drvyy</p>
+            `,
+            text: `Hi ${admin.username},\n\nPlease use the following Link to reset your password:\n\n${verificationLink}\n\nIf you did not request this, please ignore this email.\n\nRegards,\nDrvyy`
+        };
 
-
-
-
-        console.log(`OTP for ${email}: ${otp}`);
-
-        res.json({ message: 'OTP sent to your email/mobile' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
