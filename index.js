@@ -66,10 +66,10 @@ app.use('/api/user', require('./router/User/booking'))
 app.use('/api/category', require('./router/Admin/DriverCategoryManagement'));
 
 app.use('/api/admin', require('./router/Admin/Stats'));
+app.use('/api/admin', require('./router/Admin/Utility'));
+
+
 // Basic error handling
-
-
-
 
 
 

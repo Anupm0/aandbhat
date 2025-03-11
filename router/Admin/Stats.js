@@ -15,6 +15,9 @@ router.get('/dashboard-stats', verifyTokenAdmin, async (req, res) => {
         // Total revenue calculation
         const totalAmountResult = await Booking.aggregate([
             {
+                $match: { status: 'completed' }
+            },
+            {
                 $group: {
                     _id: null,
                     totalAmount: { $sum: "$fare" }
@@ -51,25 +54,31 @@ router.get('/dashboard-stats', verifyTokenAdmin, async (req, res) => {
             }
         ];
 
-        // Ride statistics for pie chart (using correct status values)
+        // Ride statistics for pie chart
         const completedRides = await Booking.countDocuments({ status: 'completed' });
         const cancelledRides = await Booking.countDocuments({ status: 'cancelled' });
         const rideStatistics = { completedRides, cancelledRides };
 
-        // Revenue statistics for line chart (last 9 months)
+        // Revenue statistics for line chart (last 14 days)
+        const daysToShow = 14; // Show last 14 days
         const currentDate = new Date();
-        const currentMonth = currentDate.getMonth();
-        const currentYear = currentDate.getFullYear();
         const revenueData = [];
 
-        for (let i = 0; i < 9; i++) {
-            const targetMonth = (currentMonth - i + 12) % 12;
-            const targetYear = currentYear - Math.floor((i - currentMonth) / 12);
-            const startDate = new Date(targetYear, targetMonth, 1);
-            // End date: last day of the target month
-            const endDate = new Date(targetYear, targetMonth + 1, 0);
+        for (let i = 0; i < daysToShow; i++) {
+            // Calculate date for each day
+            const targetDate = new Date(currentDate);
+            targetDate.setDate(currentDate.getDate() - i);
 
-            const monthlyRevenue = await Booking.aggregate([
+            // Set to beginning of the day
+            const startDate = new Date(targetDate);
+            startDate.setHours(0, 0, 0, 0);
+
+            // Set to end of the day
+            const endDate = new Date(targetDate);
+            endDate.setHours(23, 59, 59, 999);
+
+            // Get revenue for this day
+            const dailyRevenue = await Booking.aggregate([
                 {
                     $match: {
                         createdAt: { $gte: startDate, $lte: endDate },
@@ -84,13 +93,25 @@ router.get('/dashboard-stats', verifyTokenAdmin, async (req, res) => {
                 }
             ]);
 
-            const revenue = monthlyRevenue.length > 0 ? monthlyRevenue[0].revenue : 0;
-            revenueData.push({ x: 9 - i, y: revenue });
+            const revenue = dailyRevenue.length > 0 ? dailyRevenue[0].revenue : 0;
+
+            // Format date as DD MMM (e.g., "15 Mar")
+            const formattedDate = startDate.toLocaleDateString('en-US', {
+                day: '2-digit',
+                month: 'short'
+            });
+
+            revenueData.push({
+                x: daysToShow - i, // Position on x-axis (1 to 14)
+                y: revenue,        // Revenue amount
+                date: formattedDate // Date label for the chart
+            });
         }
+
         // Reverse to display chronologically (oldest first)
         const revenueChartData = revenueData.reverse();
 
-        // Recent rides table data with proper population and field names
+        // Recent rides table data with proper population
         const recentBookings = await Booking.find()
             .sort({ createdAt: -1 })
             .limit(10)
