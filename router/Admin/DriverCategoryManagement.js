@@ -83,7 +83,7 @@ router.delete('/delete-category/:categoryId', verifyTokenAdmin, async (req, res)
             return res.status(404).json({ message: 'Category not found' });
         }
 
-        await category.remove();
+        await DriverCategory.findByIdAndDelete(categoryId);
         res.status(201).json({ message: 'Category deleted successfully' });
 
     } catch (error) {

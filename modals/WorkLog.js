@@ -7,6 +7,7 @@ const workLogSchema = new mongoose.Schema({
     shiftStartTime: { type: Date }, // Add this if you need to track shift start time
     shuftEndTime: { type: Date }, // Add this if you need to track shift end time
     totalHoursWorked: { type: Number }, // Total hours worked during the shift
+    fairEarned: { type: Number }, // Total fare earned during the shift
     notes: { type: String }, // Any additional notes or comments
     vehicleUsed: {
         type: mongoose.Schema.Types.ObjectId,
