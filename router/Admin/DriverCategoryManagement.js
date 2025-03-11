@@ -3,14 +3,13 @@ const router = express.Router();
 
 const DriverCategory = require('../../modals/DriverCategories');
 
-const verifyToken = require('../../helper/utils/verifytokenUsers');
 const verifyTokenAdmin = require('../../helper/utils/verifytokenAdmin');
 
 
 
 
 
-router.get('/categories', verifyToken, async (req, res) => {
+router.get('/categories', async (req, res) => {
     try {
         const categories = await DriverCategory.find();
         res.status(201).json(categories);

@@ -63,15 +63,6 @@ app.use('/api/driver', require('./router/driver/UpdateLocation'));
 app.use('/api', require('./router/User/FindDriver')); // New FindDriver route
 app.use('/api/driver', require('./router/driver/AcceptRide')); // New AcceptRide route
 app.use('/api/user', require('./router/User/booking'))
-
-
-
-
-
-
-
-
-app.use('/api/category', require('./router/driver/category'));
 app.use('/api/category', require('./router/admin/DriverCategoryManagement'));
 
 
