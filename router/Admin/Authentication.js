@@ -252,7 +252,7 @@ router.post('/forgot-password', async (req, res) => {
             }
         });
 
-        res.status(200).json({ message: 'Password reset link sent to your email' });
+        res.status(204).json({ message: 'Password reset link sent to your email' });
 
     } catch (error) {
         console.error(error);
