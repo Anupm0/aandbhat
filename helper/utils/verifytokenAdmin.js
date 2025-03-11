@@ -37,7 +37,7 @@ async function verifyTokenAdmin(req, res, next) {
         }
 
         // Find admin
-        const admin = await Admin.findById(decoded.adminId)
+        const admin = await Admin.findById(decoded.id)
             .select('-password -otp -otpExpiry -verificationToken');  // Exclude sensitive data
 
         if (!admin) {
