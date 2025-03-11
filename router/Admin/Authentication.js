@@ -10,7 +10,7 @@ const Admin = require('../../modals/Admin'); // Adjust the path to your Admin mo
 
 // Environment variables (set these in your environment or .env file)
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15s';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15h';
 const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'your_refresh_secret';
 const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '30d';
 
