@@ -65,7 +65,7 @@ app.use('/api/driver', require('./router/driver/AcceptRide')); // New AcceptRide
 app.use('/api/user', require('./router/User/booking'))
 app.use('/api/category', require('./router/Admin/DriverCategoryManagement'));
 
-
+app.use('/api/admin', require('./router/Admin/Stats'));
 // Basic error handling
 
 
