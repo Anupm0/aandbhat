@@ -4,6 +4,8 @@ const { generateToken, generateVerificationToken } = require('../../helper/Auth/
 const Driver = require('../../modals/Driver');
 const { formatMobile } = require('../../helper/format/fomvalidtion');
 const transporter = require('../../helper/emailTransporter/EmailTransforter');
+const { generateWalletId } = require('../../modals/Driver');
+
 
 router.post('/sign-up-driver', async (req, res) => {
     const { firstName, lastName, email, phoneNumber, password, address, yearsOfExperience, previousCar, aadharCardNumber, panCardNumber, licenseNumber, licenseExpiry, bankDetails } = req.body;
@@ -29,6 +31,7 @@ router.post('/sign-up-driver', async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const verificationToken = generateVerificationToken();
+        const walletId = await generateWalletId();
         const formattedMobile = phoneNumber ? formatMobile(phoneNumber) : undefined;
         const newDriver = new Driver({
             firstName,
@@ -44,6 +47,11 @@ router.post('/sign-up-driver', async (req, res) => {
             panCardNumber,
             licenseNumber,
             licenseExpiry,
+            wallet: {
+                id: walletId,
+                balance: 0,
+                logs: []
+            },
             driverId,
             bankDetails
         });

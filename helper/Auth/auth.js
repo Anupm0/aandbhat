@@ -17,8 +17,41 @@ function generateVerificationToken() {
     return crypto.randomBytes(16).toString('hex');
 }
 
+function generateRideVerificationCode() {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+}
+
+
+async function verifyRideOTP(bookingId, otp) {
+    const Booking = require('../../modals/booking');
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+        throw new Error('Booking not found');
+    }
+
+    if (booking.verificationStatus === 'verified') {
+        throw new Error('Booking already verified');
+    }
+
+    if (booking.verificationCodeExpiry < new Date()) {
+        throw new Error('Verification code expired');
+    }
+
+    if (booking.verificationCode !== otp) {
+        throw new Error('Invalid verification code');
+    }
+
+    booking.verificationStatus = 'verified';
+    await booking.save();
+
+    return booking;
+}
+
+
 module.exports = {
     generateToken,
     generateOTP,
-    generateVerificationToken
+    generateVerificationToken,
+    verifyRideOTP
 };

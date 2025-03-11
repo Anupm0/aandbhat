@@ -9,7 +9,10 @@ const driverSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-
+    isActive: {
+        type: Boolean,
+        default: true
+    },
     email: {
         type: String,
         unique: true,
@@ -100,6 +103,21 @@ const driverSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Vehicle'
     }],
+    location: {
+        type: {
+            type: String,
+            enum: ['Point'],
+            default: 'Point'
+        },
+        coordinates: {
+            type: [Number],
+            default: [0, 0] // Default coordinates (longitude, latitude)
+        }
+    },
+
+    categories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'DriverCategories' }],
+
+
     approvalStatus: {
         type: String,
         enum: ['pending', 'approved', 'rejected'],
@@ -107,7 +125,7 @@ const driverSchema = new mongoose.Schema({
     },
     backgroundCheckStatus: {
         type: String,
-        enum: ['pending', 'verified', 'failed'],
+        enum: ['pending', 'verified', 'approved', 'failed'],
         default: 'pending'
     },
     wallet: {
@@ -125,36 +143,46 @@ const driverSchema = new mongoose.Schema({
             timestamp: Date
         }]
     },
-
-
-
-
 }, { timestamps: true });
 
+// Function to generate a unique driver ID
+function generateDriverId() {
+    const prefix = 'DR';
+    const random = Math.floor(Math.random() * 100000000).toString().padStart(8, '0');
+    return `${prefix}${random}`;
+}
 
+// Function to generate a unique wallet ID
+async function generateWalletId() {
+    const prefix = 'WALLET';
+    let random;
+    let walletId;
+    let walletIdExists;
 
+    do {
+        random = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+        walletId = `${prefix}-${random}`;
+        walletIdExists = await Driver.findOne({ 'wallet.id': walletId });
+    } while (walletIdExists);
 
+    return walletId;
+}
 
-
-driverSchema.pre('save', function (next) {
+// Pre-save hook to generate driverId if it doesn't exist
+driverSchema.pre('save', async function (next) {
     if (!this.driverId) {
-        this.driverId = generateDriver();
+        let newDriverId;
+        let driverIdExists;
+        do {
+            newDriverId = generateDriverId();
+            driverIdExists = await Driver.findOne({ driverId: newDriverId });
+        } while (driverIdExists);
+        this.driverId = newDriverId;
     }
     next();
 });
-
-
-
-const generateWalletId = () => {
-    const prefix = 'WALLET';
-    const random = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
-    return `${prefix}-${random}`;
-};
-
-
-
+driverSchema.index({ location: '2dsphere' });
 const Driver = mongoose.model('Driver', driverSchema);
 
-
-
 module.exports = Driver;
+module.exports.generateWalletId = generateWalletId;

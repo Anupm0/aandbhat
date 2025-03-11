@@ -200,13 +200,12 @@ router.post('/refresh-token', async (req, res) => {
             if (err) {
                 return res.status(401).json({ message: 'Invalid refresh token' });
             }
-            // Generate a new access token based on the decoded payload
             const newAccessToken = jwt.sign(
                 { id: decoded.id, email: decoded.email },
                 JWT_SECRET,
                 { expiresIn: JWT_EXPIRES_IN }
             );
-            res.json({ accessToken: newAccessToken });
+            res.status(201).json({ accessToken: newAccessToken });
         });
     } catch (error) {
         console.error(error);

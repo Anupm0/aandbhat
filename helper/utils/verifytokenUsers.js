@@ -38,7 +38,7 @@ async function verifyToken(req, res, next) {
 
         // Find user
         const user = await User.findById(decoded.userId)
-            .select('-password -otp -otpExpiry');  // Exclude sensitive data
+            .select('-password -otp -otpExpiry -verificationToken');  // Exclude sensitive data
 
         if (!user) {
             return res.status(404).json({
@@ -49,6 +49,7 @@ async function verifyToken(req, res, next) {
 
         // Add user to request object
         req.user = user;
+        req.user.userId = user._id;  // Add user ID to request object
         next();
 
     } catch (error) {
