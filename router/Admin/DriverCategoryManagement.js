@@ -74,25 +74,20 @@ router.patch('/update-category/:categoryId', verifyTokenAdmin, async (req, res) 
 });
 
 
-
 router.delete('/delete-category/:categoryId', verifyTokenAdmin, async (req, res) => {
     const { categoryId } = req.params;
     try {
-        const category = await DriverCategory.findById(categoryId);
+        const category = await DriverCategory.findByIdAndDelete(categoryId);
         if (!category) {
             return res.status(404).json({ message: 'Category not found' });
         }
 
-        await DriverCategory.findByIdAndDelete(categoryId);
-        res.status(201).json({ message: 'Category deleted successfully' });
-
+        res.status(200).json({ message: 'Category deleted successfully' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
     }
-}
-);
-
+});
 
 module.exports = router;
 
