@@ -3,6 +3,7 @@ const router = express.Router();
 
 const DriverCategory = require('../../modals/DriverCategories');
 
+const verifyToken = require('../../helper/utils/verifytokenUsers');
 const verifyTokenAdmin = require('../../helper/utils/verifytokenAdmin');
 
 
