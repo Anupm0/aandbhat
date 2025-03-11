@@ -5,8 +5,8 @@ const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const transporter = require('../../helper/emailTransporter/EmailTransforter')
-const { generateVerificationToken } = require('../../helper/Auth/auth')
 const Admin = require('../../modals/Admin'); // Adjust the path to your Admin model file
+const verifyTokenAdmin = require('../../helper/utils/verifytokenAdmin');
 
 // Environment variables (set these in your environment or .env file)
 const JWT_SECRET = process.env.JWT_SECRET || 'MASWORLDIT';
@@ -36,23 +36,7 @@ const generateRefreshToken = (admin) => {
     );
 };
 
-/**
- * Middleware: Authenticate using the access token.
- */
-const authenticate = (req, res, next) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ message: 'Authorization header missing or malformed' });
-    }
-    const token = authHeader.split(' ')[1];
-    try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        req.admin = decoded; // Attach decoded payload (e.g., admin id and email)
-        next();
-    } catch (error) {
-        return res.status(401).json({ message: 'Invalid token' });
-    }
-};
+
 
 /**
  * @route   POST /signup
@@ -218,32 +202,57 @@ router.post('/refresh-token', async (req, res) => {
  * @desc    Generate an OTP for password reset and send it to the admin
  */
 router.post('/forgot-password', async (req, res) => {
+    const { email } = req.body;
+    if (!email) {
+        return res.status(400).json({ message: 'Email is required' });
+    }
+
     try {
-        const { email } = req.body;
         const admin = await Admin.findOne({ email });
         if (!admin) {
             return res.status(400).json({ message: 'Admin with this email does not exist' });
         }
 
-        const verificationToken = generateVerificationToken();
-        admin.verificationToken = verificationToken;
-        const verificationLink = `${req.protocol}://${req.hostname}/api/admin/reset-password?token=${verificationToken}`;
+        // Generate a reset token
+        const resetToken = crypto.randomBytes(32).toString('hex');
+
+        // Save the token to the admin record
+        admin.verificationToken = resetToken;
+        // Set token expiry to 1 hour from now
+        admin.otpExpiry = new Date(Date.now() + 3600000);
         await admin.save();
 
+        // Create reset password link
+        const resetLink = `${req.protocol}://${req.get('host')}/api/admin/reset-password/${resetToken}`;
+
+        // Send email with reset link
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: email,
-            subject: 'Password Reset',
+            subject: 'Password Reset Request',
             html: `
-                <h1>Hi ${admin.username},</h1>
-                <p>Please use the following Link to reset your password:</p>
-                <h2>${verificationLink}</h2>
-                <p>If you did not request this, please ignore this email.</p>
-                <p>Regards,</p>
-                <p>Drvyy</p>
-            `,
-            text: `Hi ${admin.username},\n\nPlease use the following Link to reset your password:\n\n${verificationLink}\n\nIf you did not request this, please ignore this email.\n\nRegards,\nDrvyy`
+          <h1>Password Reset</h1>
+          <p>Hi ${admin.firstName || admin.username},</p>
+          <p>We received a request to reset your password. Please click the link below to reset your password:</p>
+          <a href="${resetLink}" style="padding: 10px 15px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Reset Password</a>
+          <p>This link will expire in 1 hour.</p>
+          <p>If you didn't request this, you can safely ignore this email.</p>
+          <p>Regards,</p>
+          <p>The Team</p>
+        `,
+            text: `Hi ${admin.firstName || admin.username},\n\nWe received a request to reset your password. Please click the link below to reset your password:\n\n${resetLink}\n\nThis link will expire in 1 hour.\n\nIf you didn't request this, you can safely ignore this email.\n\nRegards,\nThe Team`
         };
+
+        console.log("reset link ", resetLink);
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.log('Error sending email:', error);
+            } else {
+                console.log('Email sent:', info.response);
+            }
+        });
+
+        res.status(200).json({ message: 'Password reset link sent to your email' });
 
     } catch (error) {
         console.error(error);
@@ -251,6 +260,122 @@ router.post('/forgot-password', async (req, res) => {
     }
 });
 
+/**
+ * @route   GET /reset-password/:token
+ * @desc    Verify token and show password reset form
+ */
+router.get('/reset-password/:token', async (req, res) => {
+    try {
+        const { token } = req.params;
+
+        const admin = await Admin.findOne({
+            verificationToken: token,
+            otpExpiry: { $gt: new Date() }
+        });
+
+        if (!admin) {
+            return res.status(400).json({ message: 'Invalid or expired token' });
+        }
+
+
+        const html = `
+        <html>
+        <head>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 0;
+                    background-color: #f4f4f4;
+                }
+                .container {
+                    max-width: 600px;
+                    margin: 0 auto;
+                    padding: 20px;
+                }
+                h1 {
+
+                    color: #333;
+                    margin-bottom: 20px;
+                }
+                p {
+                    color: #333;
+                    margin-bottom: 20px;
+                }
+                a {
+                    padding: 10px 15px;
+                    background-color: #4CAF50;
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 5px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Reset Password</h1>
+                <p>Hi ${admin.firstName || admin.username},</p>
+                <p>Enter your new password below:</p>
+                <form action="${req.protocol}://${req.get('host')}/api/admin/reset-password/${token}" method="POST">
+                    <input type="password" name="newPassword" placeholder="New Password" required style="padding: 10px; width: 100%; margin-bottom: 10px;">
+                    <button type="submit" style="padding: 10px 15px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Reset Password</button>
+                </form>
+                <p>This link will expire in 1 hour.</p>
+                <p>If you didn't request this, you can safely ignore this email.</p>
+                <p>Regards,</p>
+                <p>The Team</p>
+            </div>
+        </body>
+        </html>
+        `;
+
+        res.send(html);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+/**
+ * @route   POST /reset-password/:token
+ * @desc    Reset password using the verification token
+ */
+router.post('/reset-password/:token', async (req, res) => {
+    try {
+        const { token } = req.params;
+        const { newPassword } = req.body;
+
+        if (!newPassword) {
+            return res.status(400).json({ message: 'New password is required' });
+        }
+
+        const admin = await Admin.findOne({
+            verificationToken: token,
+            otpExpiry: { $gt: new Date() } // Check if token hasn't expired
+        });
+
+        if (!admin) {
+            return res.status(400).json({ message: 'Invalid or expired token' });
+        }
+
+        // Hash the new password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        // Update the admin record
+        admin.password = hashedPassword;
+        admin.verificationToken = null;
+        admin.otpExpiry = null;
+        await admin.save();
+
+        res.json({ message: 'Password has been reset successfully' });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
 /**
  * @route   POST /reset-password
  * @desc    Reset password using the OTP
@@ -279,43 +404,11 @@ router.get('/verify-email/:token', async (req, res) => {
 });
 
 
-
-
-
-
-router.post('/reset-password', async (req, res) => {
-    try {
-        const { email, otp, newPassword } = req.body;
-        const admin = await Admin.findOne({ email });
-        if (!admin) {
-            return res.status(400).json({ message: 'Admin with this email does not exist' });
-        }
-        if (admin.otp !== otp || admin.otpExpiry < new Date()) {
-            return res.status(400).json({ message: 'Invalid or expired OTP' });
-        }
-
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(newPassword, salt);
-        admin.password = hashedPassword;
-        admin.otp = null;
-        admin.otpExpiry = null;
-        await admin.save();
-
-        res.json({ message: 'Password reset successful' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
-
-
-
 /**
  * @route   GET /me
  * @desc    Get current admin's profile
  */
-router.get('/me', authenticate, async (req, res) => {
+router.get('/me', verifyTokenAdmin, async (req, res) => {
     try {
         const admin = await Admin.findById(req.admin.id).select('-password -otp -otpExpiry');
         if (!admin) {
