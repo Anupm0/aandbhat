@@ -68,6 +68,9 @@ app.use('/api/category', require('./router/Admin/DriverCategoryManagement'));
 app.use('/api/admin', require('./router/Admin/Stats'));
 app.use('/api/admin', require('./router/Admin/Utility'));
 
+app.use('/api/admin/users', require('./router/Admin/UsersManagement'));
+app.use('/api/admin/drivers', require('./router/Admin/DriversManagement'));
+
 
 // Basic error handling
 
