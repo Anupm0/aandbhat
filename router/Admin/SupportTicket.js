@@ -8,6 +8,25 @@ const User = require('../../modals/user');
 const Driver = require('../../modals/Driver');
 const Admin = require('../../modals/Admin');
 const Support = require('../../modals/SupportTicket');
+const fixSchemaReferences = async () => {
+    try {
+        // Get the actual model names from the schemas
+        const supportModel = mongoose.model('Support');
+
+        // Update the schema collection references to match actual model names
+        supportModel.schema.path('userId').options.ref = 'User';
+        supportModel.schema.path('driverId').options.ref = 'Driver';
+        supportModel.schema.path('resolvedBy').options.ref = 'Admin';
+
+        console.log('Schema references updated successfully');
+    } catch (error) {
+        console.error('Error fixing schema references:', error);
+    }
+};
+
+// Call this function before registering routes
+fixSchemaReferences();
+
 
 
 router.get('/support-tickets', verifyTokenAdmin, async (req, res) => {
