@@ -268,15 +268,14 @@ router.put('/:driverId', verifyTokenAdmin, async (req, res) => {
         });
     }
 });
-
 /**
- * PATCH update driver status
- * Updates a driver's approval status or background check status
+ * PATCH update driver verification status
+ * Updates a driver's mobile verification or email verification status
  */
-router.patch('/:driverId/status', verifyTokenAdmin, async (req, res) => {
+router.patch('/:driverId/verification', verifyTokenAdmin, async (req, res) => {
     try {
         const { driverId } = req.params;
-        const { approvalStatus, backgroundCheckStatus, isActive } = req.body;
+        const { isMobileVerified, isEmailVerified } = req.body;
         
         // Find driver first to check if it exists
         const driver = await Driver.findById(driverId);
@@ -288,19 +287,18 @@ router.patch('/:driverId/status', verifyTokenAdmin, async (req, res) => {
         
         // Prepare update object
         const updateData = {};
-        if (approvalStatus) {
-            updateData.approvalStatus = approvalStatus;
+        
+        // Check if isMobileVerified is provided in the request
+        if (isMobileVerified !== undefined) {
+            updateData.isMobileVerified = isMobileVerified;
         }
         
-        if (backgroundCheckStatus) {
-            updateData.backgroundCheckStatus = backgroundCheckStatus;
+        // Check if isEmailVerified is provided in the request
+        if (isEmailVerified !== undefined) {
+            updateData.isEmailVerified = isEmailVerified;
         }
         
-        if (isActive !== undefined) {
-            updateData.isActive = isActive;
-        }
-        
-        // Update the driver status
+        // Update the driver verification status
         const updatedDriver = await Driver.findByIdAndUpdate(
             driverId,
             { $set: updateData },
@@ -308,17 +306,18 @@ router.patch('/:driverId/status', verifyTokenAdmin, async (req, res) => {
         );
         
         res.status(200).json({
-            message: 'Driver status updated successfully',
+            message: 'Driver verification status updated successfully',
             data: updatedDriver
         });
     } catch (error) {
-        console.error('Error updating driver status:', error);
+        console.error('Error updating driver verification status:', error);
         res.status(500).json({
-            message: 'Failed to update driver status',
+            message: 'Failed to update driver verification status',
             error: error.message
         });
     }
 });
+
 
 /**
  * DELETE driver
