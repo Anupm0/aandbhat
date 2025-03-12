@@ -7,6 +7,7 @@ const verifyTokenAdmin = require('../../helper/utils/verifytokenAdmin');
 const User = require('../../modals/user');
 const Driver = require('../../modals/Driver');
 const Admin = require('../../modals/Admin');
+const Support = require('../../modals/SupportTicket');
 
 
 router.get('/support-tickets', verifyTokenAdmin, async (req, res) => {

@@ -17,6 +17,7 @@ require('./modals/user');
 require('./modals/Admin');
 require('./modals/booking');
 require('./modals/MessageSchema');
+require('./modals/SupportTicket');
 
 // Initialize socket manager with server
 const socketManager = require('./helper/utils/socketManager');
