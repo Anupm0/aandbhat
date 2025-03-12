@@ -70,8 +70,7 @@ app.use('/api/admin', require('./router/Admin/Utility'));
 
 app.use('/api/admin/users', require('./router/Admin/UsersManagement'));
 app.use('/api/admin/drivers', require('./router/Admin/DriversManagement'));
-
-
+app.use('/api/admin', require('./router/Admin/SupportTicket'));
 // Basic error handling
 
 
