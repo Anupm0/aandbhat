@@ -239,9 +239,10 @@ router.post('/support-tickets', verifyTokenAdmin, async (req, res) => {
  * UPDATE a support ticket (typically for changing status or adding resolution)
  */
 router.patch('/support-tickets/:id', verifyTokenAdmin, async (req, res) => {
+    console.log(req.body, req.params);
     try {
         const { id } = req.params;
-        const adminId = req.user.id; // From verifyTokenAdmin middleware
+        const adminId = req.admin.id; // From verifyTokenAdmin middleware
         const { status, resolveMessage } = req.body;
 
         // Validate MongoDB ObjectId
