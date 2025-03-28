@@ -7,13 +7,16 @@ const transporter = require('../../helper/emailTransporter/EmailTransforter');
 const { generateWalletId } = require('../../modals/Driver');
 const upload = require('../../helper/upload/uploader');
 
+// Sign-up driver route with dynamic file handling
+router.post('/sign-up-driver', upload.any(), async (req, res) => {
+    const {
+        firstName, lastName, email, phoneNumber, password, address,
+        yearsOfExperience, previousCar, aadharCardNumber, panCardNumber,
+        licenseNumber, licenseExpiry
+    } = req.body;
 
-router.post('/sign-up-driver', upload.single('file'), async (req, res) => {
-    const { firstName, lastName, email, phoneNumber, password, address, yearsOfExperience, previousCar, aadharCardNumber, panCardNumber, licenseNumber, licenseExpiry } = req.body;
-
-    console.log('req.file:', req.file);
+    console.log('req.files:', req.files);
     console.log('req.body:', req.body);
-
 
     const bankDetails = {
         accountNumber: req.body['bankDetails.accountNumber'],
@@ -21,13 +24,17 @@ router.post('/sign-up-driver', upload.single('file'), async (req, res) => {
         bankName: req.body['bankDetails.bankName']
     };
 
-    // The file processed by Multer is available as req.file
-    if (!req.file) {
-        return res.status(400).json({ message: 'Please upload a file' });
+    // Check if at least one file is uploaded
+    if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ message: 'Please upload at least one file' });
     }
 
-    // Construct the file URL – adjust based on your hosting/static file serving setup
-    const fileUrl = `/uploads/drivers/${req.file.filename}${Date.now()}`;
+    // Construct an array with file details
+    const filesData = req.files.map(file => ({
+        url: `/uploads/drivers/${file.filename}`, // adjust this path based on your static serving setup
+        filename: file.filename,
+        fieldname: file.fieldname
+    }));
 
     // Validate required fields
     if (
@@ -40,12 +47,12 @@ router.post('/sign-up-driver', upload.single('file'), async (req, res) => {
         return res.status(400).json({ message: 'Please enter all fields' });
     }
 
-
     try {
         const driverExists = await Driver.findOne({ email });
         if (driverExists) {
             return res.status(400).json({ message: 'User already exists' });
         }
+
         // Generate a unique driverId
         let driverId = 'DR' + Math.floor(Math.random() * 100000000);
         let driverIdExists = await Driver.findOne({ driverId });
@@ -80,11 +87,8 @@ router.post('/sign-up-driver', upload.single('file'), async (req, res) => {
                 balance: 0,
                 logs: []
             },
-            // Save the file details in the images array
-            images: [{
-                url: fileUrl,
-                filename: req.file.filename
-            }]
+            // Save all uploaded files in the images array
+            images: filesData
         });
         await newDriver.save();
 
@@ -96,12 +100,12 @@ router.post('/sign-up-driver', upload.single('file'), async (req, res) => {
             to: email,
             subject: 'Verify Your Email',
             html: `
-                <h1>Email Verification For ${firstName} ${lastName}</h1>
-                <p>Please click the link below to verify your email address:</p>
-                <a href="${verificationLink}">Verify Email</a>
-                <p>This link will expire in 24 hours.</p>
-                <p>If you did not create an account, please ignore this email.</p>
-            `
+        <h1>Email Verification For ${firstName} ${lastName}</h1>
+        <p>Please click the link below to verify your email address:</p>
+        <a href="${verificationLink}">Verify Email</a>
+        <p>This link will expire in 24 hours.</p>
+        <p>If you did not create an account, please ignore this email.</p>
+      `
         });
 
         res.status(201).json({ message: 'Driver registered successfully. Please verify your email.' });
@@ -111,7 +115,6 @@ router.post('/sign-up-driver', upload.single('file'), async (req, res) => {
     }
 });
 
-
 router.get('/verify-driver-email', async (req, res) => {
     const { token: verificationToken } = req.query;
     if (!verificationToken) {
@@ -120,15 +123,14 @@ router.get('/verify-driver-email', async (req, res) => {
     try {
         const driver = await Driver.findOne({ verificationToken });
         if (!driver) {
-
             return res.status(400).json({ message: 'Invalid driver token' });
         }
         driver.isEmailVerified = true;
         driver.verificationToken = '';
         await driver.save();
         return res.status(201).json({ message: 'Email verified successfully' });
-    }
-    catch (err) {
+    } catch (err) {
+        console.error(err);
         return res.status(500).json({ message: 'Server Error' });
     }
 });
@@ -153,12 +155,12 @@ router.post('/forgot-password-driver', async (req, res) => {
             to: email,
             subject: 'Reset Your Password',
             html: `
-                <h1>Reset Password</h1>
-                <p>Please click the link below to reset your password:</p>
-                <a href="${resetLink}">Reset Password</a>
-                <p>This link will expire in 24 hours.</p>
-                <p>If you did not request a password reset, please ignore this email.</p>
-            `
+        <h1>Reset Password</h1>
+        <p>Please click the link below to reset your password:</p>
+        <a href="${resetLink}">Reset Password</a>
+        <p>This link will expire in 24 hours.</p>
+        <p>If you did not request a password reset, please ignore this email.</p>
+      `
         });
 
         return res.status(201).json({ message: 'Password reset link sent successfully' });
@@ -180,70 +182,70 @@ router.get('/reset-password-driver', async (req, res) => {
         }
 
         const htmlContent = `
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Reset Password</title>
-                <style>
-                    body {
-                        font-family: Arial, sans-serif;
-                        background-color: #f4f4f4;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        height: 100vh;
-                        margin: 0;
-                    }
-                    .container {
-                        background-color: #fff;
-                        padding: 20px;
-                        border-radius: 8px;
-                        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-                        max-width: 400px;
-                        width: 100%;
-                    }
-                    h1 {
-                        text-align: center;
-                        color: #333;
-                    }
-                    form {
-                        display: flex;
-                        flex-direction: column;
-                    }
-                    input {
-                        margin-bottom: 10px;
-                        padding: 10px;
-                        border: 1px solid #ccc;
-                        border-radius: 4px;
-                    }
-                    button {
-                        padding: 10px;
-                        background-color: #28a745;
-                        color: #fff;
-                        border: none;
-                        border-radius: 4px;
-                        cursor: pointer;
-                    }
-                    button:hover {
-                        background-color: #218838;
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <h1>Reset Password</h1>
-                    <form action="/api/auth/driver/reset-password-driver" method="POST">
-                        <input type="hidden" name="token" value="${token}">
-                        <input type="password" name="newPassword" placeholder="New Password" required>
-                        <input type="password" name="confirmPassword" placeholder="Confirm Password" required>
-                        <button type="submit">Reset Password</button>
-                    </form>
-                </div>
-            </body>
-            </html>
-        `;
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Reset Password</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+          }
+          .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+          }
+          h1 {
+            text-align: center;
+            color: #333;
+          }
+          form {
+            display: flex;
+            flex-direction: column;
+          }
+          input {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+          }
+          button {
+            padding: 10px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+          }
+          button:hover {
+            background-color: #218838;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>Reset Password</h1>
+          <form action="/api/auth/driver/reset-password-driver" method="POST">
+            <input type="hidden" name="token" value="${token}">
+            <input type="password" name="newPassword" placeholder="New Password" required>
+            <input type="password" name="confirmPassword" placeholder="Confirm Password" required>
+            <button type="submit">Reset Password</button>
+          </form>
+        </div>
+      </body>
+      </html>
+    `;
 
         res.send(htmlContent);
     } catch (err) {
@@ -287,6 +289,7 @@ router.post('/login-driver-email', async (req, res) => {
         if (!driver) {
             return res.status(400).json({ message: 'User does not exist' });
         }
+        // Generate a new verification token (if needed) for email verification
         driver.verificationToken = generateVerificationToken();
         await driver.save();
 
@@ -295,25 +298,21 @@ router.post('/login-driver-email', async (req, res) => {
         console.log('driver:', driver);
 
         if (driver.isEmailVerified === false) {
-
-
             await transporter.sendMail({
                 from: process.env.EMAIL_USER,
                 to: email,
                 subject: 'Verify Your Email',
                 html: `
-                <h1>Email Verification For ${driver.firstName} ${driver.lastName}</h1>
-                <p>Please click the link below to verify your email address:</p>
-                <a href="${verificationLink}">Verify Email</a>
-                <p>This link will expire in 24 hours.</p>
-                <p>If you did not create an account, please ignore this email.</p>
-            `
+          <h1>Email Verification For ${driver.firstName} ${driver.lastName}</h1>
+          <p>Please click the link below to verify your email address:</p>
+          <a href="${verificationLink}">Verify Email</a>
+          <p>This link will expire in 24 hours.</p>
+          <p>If you did not create an account, please ignore this email.</p>
+        `
             });
-
             console.log('verificationLink:', verificationLink);
             return res.status(400).json({ message: 'Please verify your email' });
         }
-
 
         const isMatch = await bcrypt.compare(password, driver.password);
         if (!isMatch) {
@@ -322,8 +321,7 @@ router.post('/login-driver-email', async (req, res) => {
 
         const token = generateToken(driver);
         return res.status(201).json({ token: token });
-    }
-    catch (err) {
+    } catch (err) {
         console.error(err);
         return res.status(500).json({ message: 'Server Error' });
     }

@@ -12,11 +12,10 @@ const storage = multer.diskStorage({
     },
     filename: (req, file, cb) => {
         // Generate a unique filename using current timestamp and a random number
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
         cb(null, uniqueSuffix + '-' + file.originalname);
     }
 });
 
 const upload = multer({ storage });
-
 module.exports = upload;
