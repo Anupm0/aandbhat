@@ -44,6 +44,7 @@ router.post('/sign-up-driver', upload.any(), async (req, res) => {
         !bankDetails.accountNumber || !bankDetails.ifscCode || !bankDetails.bankName
     ) {
         if (!bankDetails.accountNumber || !bankDetails.ifscCode || !bankDetails.bankName) {
+            console.error('Missing required bank details:', bankDetails);
             return res.status(400).json({ message: 'Please enter all bank details' });
         }
 
