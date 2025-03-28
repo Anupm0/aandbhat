@@ -43,6 +43,11 @@ router.post('/sign-up-driver', upload.any(), async (req, res) => {
         !panCardNumber || !licenseNumber || !licenseExpiry ||
         !bankDetails.accountNumber || !bankDetails.ifscCode || !bankDetails.bankName
     ) {
+        if (!bankDetails.accountNumber || !bankDetails.ifscCode || !bankDetails.bankName) {
+            return res.status(400).json({ message: 'Please enter all bank details' });
+        }
+
+
         console.error('Missing required fields:', req.body);
         return res.status(400).json({ message: 'Please enter all fields' });
     }
