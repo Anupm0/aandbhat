@@ -113,6 +113,9 @@ async function updateEnvFile(config) {
                 throw err;
             }
             // File doesn't exist, create empty one
+            fs.writeFileSync(envPath, '');
+            envContent = fs.readFileSync(envPath, 'utf8');
+
         }
 
         // Parse existing content

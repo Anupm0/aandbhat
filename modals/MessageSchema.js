@@ -1,3 +1,4 @@
+// models/message.model.js
 const mongoose = require('mongoose');
 
 const messageSchema = new mongoose.Schema({
@@ -38,7 +39,7 @@ const messageSchema = new mongoose.Schema({
     }
 });
 
+// For efficient querying by booking
 messageSchema.index({ bookingId: 1, createdAt: 1 });
 
-const Message = mongoose.model('Message', messageSchema);
-module.exports = Message;
+module.exports = mongoose.model('Message', messageSchema);

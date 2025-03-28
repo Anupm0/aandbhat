@@ -114,6 +114,11 @@ const driverSchema = new mongoose.Schema({
             default: [0, 0] // Default coordinates (longitude, latitude)
         }
     },
+    images: [{
+        url: { type: String, required: true },
+        filename: { type: String, required: true }
+    }]
+    ,
 
     categories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'DriverCategories' }],
 

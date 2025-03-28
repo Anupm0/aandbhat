@@ -5,24 +5,49 @@ const Driver = require('../../modals/Driver');
 const { formatMobile } = require('../../helper/format/fomvalidtion');
 const transporter = require('../../helper/emailTransporter/EmailTransforter');
 const { generateWalletId } = require('../../modals/Driver');
+const upload = require('../../helper/upload/uploader');
 
 
-router.post('/sign-up-driver', async (req, res) => {
-    const { firstName, lastName, email, phoneNumber, password, address, yearsOfExperience, previousCar, aadharCardNumber, panCardNumber, licenseNumber, licenseExpiry, bankDetails } = req.body;
+router.post('/sign-up-driver', upload.single('file'), async (req, res) => {
+    const { firstName, lastName, email, phoneNumber, password, address, yearsOfExperience, previousCar, aadharCardNumber, panCardNumber, licenseNumber, licenseExpiry } = req.body;
 
-    if (!firstName || !lastName || !email || !phoneNumber || !password || !address || !yearsOfExperience || !previousCar || !aadharCardNumber || !panCardNumber || !licenseNumber || !licenseExpiry || !bankDetails) {
+    console.log('req.file:', req.file);
+    console.log('req.body:', req.body);
+
+
+    const bankDetails = {
+        accountNumber: req.body['bankDetails.accountNumber'],
+        ifscCode: req.body['bankDetails.ifscCode'],
+        bankName: req.body['bankDetails.bankName']
+    };
+
+    // The file processed by Multer is available as req.file
+    if (!req.file) {
+        return res.status(400).json({ message: 'Please upload a file' });
+    }
+
+    // Construct the file URL – adjust based on your hosting/static file serving setup
+    const fileUrl = `/uploads/drivers/${req.file.filename}${Date.now()}`;
+
+    // Validate required fields
+    if (
+        !firstName || !lastName || !email || !phoneNumber || !password ||
+        !address || !yearsOfExperience || !previousCar || !aadharCardNumber ||
+        !panCardNumber || !licenseNumber || !licenseExpiry ||
+        !bankDetails.accountNumber || !bankDetails.ifscCode || !bankDetails.bankName
+    ) {
+        console.error('Missing required fields:', req.body);
         return res.status(400).json({ message: 'Please enter all fields' });
     }
 
-    console.log(req.body);
+
     try {
-        const driver = await Driver.findOne({ email });
-        if (driver) {
+        const driverExists = await Driver.findOne({ email });
+        if (driverExists) {
             return res.status(400).json({ message: 'User already exists' });
         }
+        // Generate a unique driverId
         let driverId = 'DR' + Math.floor(Math.random() * 100000000);
-
-        // Verify if the driverId is unique
         let driverIdExists = await Driver.findOne({ driverId });
         while (driverIdExists) {
             driverId = 'DR' + Math.floor(Math.random() * 100000000);
@@ -33,6 +58,7 @@ router.post('/sign-up-driver', async (req, res) => {
         const verificationToken = generateVerificationToken();
         const walletId = await generateWalletId();
         const formattedMobile = phoneNumber ? formatMobile(phoneNumber) : undefined;
+
         const newDriver = new Driver({
             firstName,
             lastName,
@@ -47,13 +73,18 @@ router.post('/sign-up-driver', async (req, res) => {
             panCardNumber,
             licenseNumber,
             licenseExpiry,
+            bankDetails,
+            driverId,
             wallet: {
                 id: walletId,
                 balance: 0,
                 logs: []
             },
-            driverId,
-            bankDetails
+            // Save the file details in the images array
+            images: [{
+                url: fileUrl,
+                filename: req.file.filename
+            }]
         });
         await newDriver.save();
 
@@ -79,6 +110,7 @@ router.post('/sign-up-driver', async (req, res) => {
         return res.status(500).json({ message: 'Server Error' });
     }
 });
+
 
 router.get('/verify-driver-email', async (req, res) => {
     const { token: verificationToken } = req.query;
