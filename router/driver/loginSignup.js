@@ -18,11 +18,16 @@ router.post('/sign-up-driver', upload.any(), async (req, res) => {
     console.log('req.files:', req.files);
     console.log('req.body:', req.body);
 
-    const bankDetails = {
-        accountNumber: req.body['bankDetails.accountNumber'],
-        ifscCode: req.body['bankDetails.ifscCode'],
-        bankName: req.body['bankDetails.bankName']
-    };
+    // Parse bankDetails if it's a JSON string
+    let bankDetails;
+    try {
+        bankDetails = typeof req.body.bankDetails === 'string'
+            ? JSON.parse(req.body.bankDetails)
+            : req.body.bankDetails;
+    } catch (err) {
+        console.error('Failed to parse bankDetails:', req.body.bankDetails);
+        return res.status(400).json({ message: 'Invalid bank details format' });
+    }
 
     // Check if at least one file is uploaded
     if (!req.files || req.files.length === 0) {
@@ -31,12 +36,12 @@ router.post('/sign-up-driver', upload.any(), async (req, res) => {
 
     // Construct an array with file details
     const filesData = req.files.map(file => ({
-        url: `/uploads/drivers/${file.filename}`, // adjust this path based on your static serving setup
+        url: `/uploads/drivers/${file.filename}`, // Adjust based on your static serving setup
         filename: file.filename,
         fieldname: file.fieldname
     }));
 
-    // Validate required fields
+    // Validate required fields including bank details
     if (
         !firstName || !lastName || !email || !phoneNumber || !password ||
         !address || !yearsOfExperience || !previousCar || !aadharCardNumber ||
@@ -47,8 +52,6 @@ router.post('/sign-up-driver', upload.any(), async (req, res) => {
             console.error('Missing required bank details:', bankDetails);
             return res.status(400).json({ message: 'Please enter all bank details' });
         }
-
-
         console.error('Missing required fields:', req.body);
         return res.status(400).json({ message: 'Please enter all fields' });
     }
@@ -106,12 +109,12 @@ router.post('/sign-up-driver', upload.any(), async (req, res) => {
             to: email,
             subject: 'Verify Your Email',
             html: `
-        <h1>Email Verification For ${firstName} ${lastName}</h1>
-        <p>Please click the link below to verify your email address:</p>
-        <a href="${verificationLink}">Verify Email</a>
-        <p>This link will expire in 24 hours.</p>
-        <p>If you did not create an account, please ignore this email.</p>
-      `
+          <h1>Email Verification For ${firstName} ${lastName}</h1>
+          <p>Please click the link below to verify your email address:</p>
+          <a href="${verificationLink}">Verify Email</a>
+          <p>This link will expire in 24 hours.</p>
+          <p>If you did not create an account, please ignore this email.</p>
+        `
         });
 
         res.status(201).json({ message: 'Driver registered successfully. Please verify your email.' });
