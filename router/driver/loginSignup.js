@@ -18,15 +18,35 @@ router.post('/sign-up-driver', upload.any(), async (req, res) => {
     console.log('req.files:', req.files);
     console.log('req.body:', req.body);
 
-    // Parse bankDetails if it's a JSON string
+    // Attempt to get bankDetails either as a nested object (if sent as JSON)
+    // or reconstruct from dotted keys (common with multipart/form-data)
     let bankDetails;
-    try {
-        bankDetails = typeof req.body.bankDetails === 'string'
-            ? JSON.parse(req.body.bankDetails)
-            : req.body.bankDetails;
-    } catch (err) {
-        console.error('Failed to parse bankDetails:', req.body.bankDetails);
-        return res.status(400).json({ message: 'Invalid bank details format' });
+    if (req.body.bankDetails) {
+        try {
+            bankDetails = typeof req.body.bankDetails === 'string'
+                ? JSON.parse(req.body.bankDetails)
+                : req.body.bankDetails;
+        } catch (err) {
+            console.error('Failed to parse bankDetails from bankDetails key:', req.body.bankDetails);
+            return res.status(400).json({ message: 'Invalid bank details format' });
+        }
+    } else {
+        bankDetails = {
+            accountNumber: req.body['bankDetails.accountNumber'],
+            ifscCode: req.body['bankDetails.ifscCode'],
+            bankName: req.body['bankDetails.bankName']
+        };
+    }
+
+    // Validate required fields including bank details
+    if (
+        !firstName || !lastName || !email || !phoneNumber || !password ||
+        !address || !yearsOfExperience || !previousCar || !aadharCardNumber ||
+        !panCardNumber || !licenseNumber || !licenseExpiry ||
+        !bankDetails.accountNumber || !bankDetails.ifscCode || !bankDetails.bankName
+    ) {
+        console.error('Missing required fields. Bank details:', bankDetails, 'Body:', req.body);
+        return res.status(400).json({ message: 'Please enter all fields' });
     }
 
     // Check if at least one file is uploaded
@@ -41,22 +61,8 @@ router.post('/sign-up-driver', upload.any(), async (req, res) => {
         fieldname: file.fieldname
     }));
 
-    // Validate required fields including bank details
-    if (
-        !firstName || !lastName || !email || !phoneNumber || !password ||
-        !address || !yearsOfExperience || !previousCar || !aadharCardNumber ||
-        !panCardNumber || !licenseNumber || !licenseExpiry ||
-        !bankDetails.accountNumber || !bankDetails.ifscCode || !bankDetails.bankName
-    ) {
-        if (!bankDetails.accountNumber || !bankDetails.ifscCode || !bankDetails.bankName) {
-            console.error('Missing required bank details:', bankDetails);
-            return res.status(400).json({ message: 'Please enter all bank details' });
-        }
-        console.error('Missing required fields:', req.body);
-        return res.status(400).json({ message: 'Please enter all fields' });
-    }
-
     try {
+        // Check if a driver already exists with the provided email or phone number
         const driverExists = await Driver.findOne({
             $or: [{ email }, { mobile: phoneNumber }]
         });
@@ -111,12 +117,12 @@ router.post('/sign-up-driver', upload.any(), async (req, res) => {
             to: email,
             subject: 'Verify Your Email',
             html: `
-          <h1>Email Verification For ${firstName} ${lastName}</h1>
-          <p>Please click the link below to verify your email address:</p>
-          <a href="${verificationLink}">Verify Email</a>
-          <p>This link will expire in 24 hours.</p>
-          <p>If you did not create an account, please ignore this email.</p>
-        `
+        <h1>Email Verification For ${firstName} ${lastName}</h1>
+        <p>Please click the link below to verify your email address:</p>
+        <a href="${verificationLink}">Verify Email</a>
+        <p>This link will expire in 24 hours.</p>
+        <p>If you did not create an account, please ignore this email.</p>
+      `
         });
 
         res.status(201).json({ message: 'Driver registered successfully. Please verify your email.' });
@@ -125,6 +131,8 @@ router.post('/sign-up-driver', upload.any(), async (req, res) => {
         return res.status(500).json({ message: 'Server Error' });
     }
 });
+
+// The following routes remain unchanged...
 
 router.get('/verify-driver-email', async (req, res) => {
     const { token: verificationToken } = req.query;
