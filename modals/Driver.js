@@ -25,6 +25,7 @@ const driverSchema = new mongoose.Schema({
     mobile: {
         type: String,
         unique: true,
+        required: true,
         sparse: true
     },
     address: {

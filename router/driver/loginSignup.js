@@ -57,7 +57,9 @@ router.post('/sign-up-driver', upload.any(), async (req, res) => {
     }
 
     try {
-        const driverExists = await Driver.findOne({ email });
+        const driverExists = await Driver.findOne({
+            $or: [{ email }, { mobile: phoneNumber }]
+        });
         if (driverExists) {
             return res.status(400).json({ message: 'User already exists' });
         }
@@ -79,7 +81,7 @@ router.post('/sign-up-driver', upload.any(), async (req, res) => {
             firstName,
             lastName,
             email,
-            phoneNumber: formattedMobile,
+            mobile: formattedMobile,
             password: hashedPassword,
             address,
             yearsOfExperience,
