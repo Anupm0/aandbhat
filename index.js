@@ -94,7 +94,7 @@ app.get('/', (req, res) => {
 const socketManager = require('./helper/utils/socketManager');
 const io = socketManager.initialize(server, {
     cors: {
-        origin: 'https://www.drvvy.com', // Allowed origin for socket connections
+        origin: '*', // Allowed origin from all clients
         methods: ['GET', 'POST'],
         credentials: true,
     }
