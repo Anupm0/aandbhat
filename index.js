@@ -5,11 +5,41 @@ const connectDB = require('./helper/utils/mongooesdbconnect');
 require('dotenv').config();
 const logger = require('./helper/utils/Logger');
 const http = require('http');
-const app = express();
 const path = require('path');
+
+const app = express();
 const server = http.createServer(app);
 
-// Import models to ensure schemas are created
+// Set up CORS options
+const corsOptions = {
+    origin: 'https://www.drvvy.com', // Allowed origin (adjust if needed)
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+// Apply CORS middleware early, and handle preflight requests
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
+// Logging middleware
+app.use((req, res, next) => {
+    logger.logRequest(req);
+    res.on('finish', () => logger.logResponse(req, res));
+    next();
+});
+
+// Body parsing middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Initialize Passport
+app.use(passport.initialize());
+
+// Connect to MongoDB
+connectDB(process.env.MONGODB_URI);
+
+// Import models (to ensure schemas are created)
 require('./modals/Driver');
 require('./modals/DriverCategories');
 require('./modals/WorkLog');
@@ -19,28 +49,6 @@ require('./modals/Admin');
 require('./modals/booking');
 require('./modals/MessageSchema');
 require('./modals/SupportTicket');
-
-
-// Initialize socket manager with server
-const socketManager = require('./helper/utils/socketManager');
-const io = socketManager.initialize(server);
-
-// Logging middleware
-app.use((req, res, next) => {
-    logger.logRequest(req);
-    res.on('finish', () => logger.logResponse(req, res));
-    next();
-});
-
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cors());
-
-app.use(passport.initialize());
-
-// Connect to MongoDB
-connectDB(process.env.MONGODB_URI);
 
 // Import routes
 const authRoutes = require('./router/User/routelogin');
@@ -65,22 +73,37 @@ app.use('/api/admin/drivers', require('./router/Admin/DriversManagement'));
 app.use('/api/admin', require('./router/Admin/SupportTicket'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Additional asset routes
+app.use(require('./router/assets/categoryImage'));
+
+// Mount chat routes
+app.use('/api', require('./router/Chats/Chat'));
+
+// Error handling middleware (should be after routes)
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({ message: 'Something went wrong!' });
 });
 
+// Base route
 app.get('/', (req, res) => {
     res.send('Hello World');
 });
 
-app.use(require('./router/assets/categoryImage'));
+// Initialize Socket.io with CORS configuration
+const socketManager = require('./helper/utils/socketManager');
+const io = socketManager.initialize(server, {
+    cors: {
+        origin: 'https://www.drvvy.com', // Allowed origin for socket connections
+        methods: ['GET', 'POST'],
+        credentials: true,
+    }
+});
 
-// Mount chat routes and initialize chat socket events
-app.use('/api', require('./router/Chats/Chat'));
+// Initialize chat socket events if applicable
 require('./router/Chats/Chat').initializeSocket(io);
 
-// Additional socket events for other features remain here
+// Additional socket events
 io.on('connection', (socket) => {
     console.log('New client connected:', socket.id);
 
@@ -150,6 +173,7 @@ io.on('connection', (socket) => {
     });
 });
 
+// Start server
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
     console.log(`Server started on host ${process.env.HOST || '0.0.0.0'} and port ${PORT}`);
