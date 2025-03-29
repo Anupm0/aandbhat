@@ -12,14 +12,18 @@ const server = http.createServer(app);
 
 // Set up CORS options
 const corsOptions = {
-    origin: 'https://www.drvvy.com', // Allowed origin (adjust if needed)
+    origin: function (origin, callback) {
+        callback(null, origin); // allow the request's origin
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization']
 };
 
-// Apply CORS middleware early, and handle preflight requests
 app.use(cors(corsOptions));
+
+
+
 app.options('*', cors(corsOptions));
 
 // Logging middleware
