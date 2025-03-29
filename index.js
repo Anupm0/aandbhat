@@ -35,11 +35,7 @@ app.use((req, res, next) => {
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors({
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true
-}));
+app.use(cors());
 
 app.use(passport.initialize());
 
